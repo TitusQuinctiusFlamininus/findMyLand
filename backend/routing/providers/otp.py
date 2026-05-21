@@ -15,9 +15,13 @@ def route(
     mode="TRANSIT"
 ):
 
-    print("\n==============================")
-    print("OTP ROUTE CALLED")
-    print("==============================")
+    print("\n====================")
+    print("OTP.PY ROUTE CALLED")
+    print("====================")
+
+    print("OTP URL:", OTP_URL)
+
+    print("MODE:", mode)
 
     try:
 
@@ -50,6 +54,11 @@ def route(
         print(
             "OTP STATUS:",
             r.status_code
+        )
+
+        print(
+            "OTP RESPONSE:",
+            r.text[:1000]
         )
 
         data = r.json()

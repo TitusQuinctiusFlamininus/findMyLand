@@ -17,7 +17,11 @@ def get_route(
     mode="driving"
 ):
 
-    print("ROUTING MODE:", mode)
+    print("\n====================")
+    print("ROUTER.PY CALLED")
+    print("====================")
+
+    print("MODE:", mode)
 
     # =====================================
     # DRIVING

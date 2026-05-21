@@ -271,6 +271,11 @@ export default function ParcelMap({ data }) {
         travelMode
       )
 
+      console.log(
+      'FRONTEND MODE:',
+      travelMode
+      )
+
       const route = await getRoute({
 
         startLat: item.lat,

@@ -117,10 +117,9 @@ def route(
     req: RouteRequest
 ):
 
-    print("\n==============================")
-    print("ROUTE REQUEST")
-    print("==============================")
-
+    print("\n====================")
+    print("BACKEND /route HIT")
+    print("====================")
     print("MODE:", req.mode)
 
     result = get_route(
