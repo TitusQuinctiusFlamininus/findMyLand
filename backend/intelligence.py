@@ -13,13 +13,22 @@ def overpass_query(query):
 
     try:
 
-        r = requests.get(
+        headers = {
+
+            "Accept":
+                "application/json",
+
+            "User-Agent":
+                "FindMyLand/1.0"
+        }
+
+        r = requests.post(
 
             OVERPASS_URL,
 
-            params={
-                "data": query
-            },
+            data=query,
+
+            headers=headers,
 
             timeout=60
         )
@@ -37,46 +46,23 @@ def overpass_query(query):
         print(r.text[:500])
 
         # ==========================================
-        # RESPONSE VALIDATION
+        # VALIDATION
         # ==========================================
 
         if r.status_code != 200:
-
-            print(
-                "OVERPASS BAD STATUS"
-            )
 
             return {}
 
         if not r.text.strip():
 
-            print(
-                "OVERPASS EMPTY RESPONSE"
-            )
-
             return {}
 
-        # ==========================================
-        # JSON PARSE
-        # ==========================================
-
-        try:
-
-            return r.json()
-
-        except Exception as e:
-
-            print(
-                "OVERPASS JSON ERROR:",
-                e
-            )
-
-            return {}
+        return r.json()
 
     except Exception as e:
 
         print(
-            "OVERPASS REQUEST ERROR:",
+            "OVERPASS ERROR:",
             e
         )
 
