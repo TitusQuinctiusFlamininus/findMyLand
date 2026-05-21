@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 
 import Map, {
   Source,
@@ -9,6 +13,8 @@ import Map, {
 } from 'react-map-gl/maplibre'
 
 import 'maplibre-gl/dist/maplibre-gl.css'
+
+import polyline from '@mapbox/polyline'
 
 import {
   FaHospital,
@@ -23,15 +29,19 @@ import {
   FaTree,
   FaShieldAlt,
   FaFire,
-  FaClinicMedical,
   FaUtensils,
   FaLandmark,
-  FaBriefcaseMedical
+  FaBriefcaseMedical,
+  FaHome
 } from 'react-icons/fa'
 
 export default function ParcelMap({ data }) {
 
   const mapRef = useRef(null)
+
+  // ====================================================
+  // STATE
+  // ====================================================
 
   const [popup, setPopup] = useState(null)
 
@@ -41,9 +51,15 @@ export default function ParcelMap({ data }) {
   const [mapStyle, setMapStyle] =
     useState('dataviz')
 
-  // =====================================================
-  // STYLES
-  // =====================================================
+  const [routeGeoJSON, setRouteGeoJSON] =
+    useState(null)
+
+  const [travelMode, setTravelMode] =
+    useState('driving')
+
+  // ====================================================
+  // MAP STYLES
+  // ====================================================
 
   const styles = {
 
@@ -57,9 +73,9 @@ export default function ParcelMap({ data }) {
       'https://api.maptiler.com/maps/dataviz/style.json?key=9OLAYy7YFpmPdRnxMmfS'
   }
 
-  // =====================================================
+  // ====================================================
   // INFRASTRUCTURE
-  // =====================================================
+  // ====================================================
 
   const infrastructure = []
 
@@ -79,9 +95,9 @@ export default function ParcelMap({ data }) {
     })
   }
 
-  // =====================================================
+  // ====================================================
   // POLYGON
-  // =====================================================
+  // ====================================================
 
   const polygon = {
 
@@ -101,9 +117,9 @@ export default function ParcelMap({ data }) {
     }
   }
 
-  // =====================================================
-  // MAP FLYTO
-  // =====================================================
+  // ====================================================
+  // INITIAL FLY
+  // ====================================================
 
   useEffect(() => {
 
@@ -127,9 +143,9 @@ export default function ParcelMap({ data }) {
 
   }, [data])
 
-  // =====================================================
+  // ====================================================
   // PULSE CSS
-  // =====================================================
+  // ====================================================
 
   useEffect(() => {
 
@@ -153,11 +169,102 @@ export default function ParcelMap({ data }) {
 
   }, [])
 
-  // =====================================================
-  // FLY TO LOCATION
-  // =====================================================
+  // ====================================================
+  // RETURN TO PARCEL
+  // ====================================================
 
-  const flyToLocation = (item) => {
+  const returnToParcel = () => {
+
+    if (!mapRef.current) return
+
+    mapRef.current.flyTo({
+
+      center: [
+        data.center[1],
+        data.center[0]
+      ],
+
+      zoom: 14,
+
+      pitch: 55,
+
+      bearing: -20,
+
+      duration: 3500
+    })
+
+    setSelectedLocation(null)
+
+    setPopup(null)
+
+    setRouteGeoJSON(null)
+  }
+
+  // ====================================================
+  // ROUTING
+  // ====================================================
+
+  const buildRoute = async (item) => {
+
+    try {
+
+      let profile = 'driving'
+
+      if (travelMode === 'walking') {
+        profile = 'walking'
+      }
+
+      if (
+        travelMode === 'bus' ||
+        travelMode === 'train'
+      ) {
+        profile = 'driving'
+      }
+
+      const url = `
+https://router.project-osrm.org/route/v1/${profile}/
+${item.lon},${item.lat};
+${data.center[1]},${data.center[0]}
+?overview=full&geometries=polyline
+`
+
+      const res = await fetch(url)
+
+      const json = await res.json()
+
+      if (!json.routes?.length) return
+
+      const decoded = polyline.decode(
+        json.routes[0].geometry
+      )
+
+      const coordinates = decoded.map(
+        ([lat, lon]) => [lon, lat]
+      )
+
+      setRouteGeoJSON({
+
+        type: 'Feature',
+
+        geometry: {
+
+          type: 'LineString',
+
+          coordinates
+        }
+      })
+
+    } catch (err) {
+
+      console.error(err)
+    }
+  }
+
+  // ====================================================
+  // FLY TO LOCATION
+  // ====================================================
+
+  const flyToLocation = async (item) => {
 
     if (!mapRef.current) return
 
@@ -182,11 +289,13 @@ export default function ParcelMap({ data }) {
     setPopup(item)
 
     setSelectedLocation(item.category)
+
+    await buildRoute(item)
   }
 
-  // =====================================================
+  // ====================================================
   // ICONS
-  // =====================================================
+  // ====================================================
 
   const categoryIcon = (category) => {
 
@@ -232,7 +341,9 @@ export default function ParcelMap({ data }) {
         return <FaFire color="orangered" />
 
       case 'pharmacy':
-        return <FaClinicMedical color="teal" />
+        return (
+          <FaBriefcaseMedical color="teal" />
+        )
 
       case 'restaurant':
         return <FaUtensils color="darkred" />
@@ -250,9 +361,9 @@ export default function ParcelMap({ data }) {
       }}
     >
 
-      {/* ========================================= */}
+      {/* ================================================= */}
       {/* SIDEBAR */}
-      {/* ========================================= */}
+      {/* ================================================= */}
 
       <div
         style={{
@@ -265,9 +376,9 @@ export default function ParcelMap({ data }) {
 
           zIndex: 10,
 
-          width: 280,
+          width: 300,
 
-          maxHeight: 700,
+          maxHeight: 750,
 
           overflowY: 'auto',
 
@@ -287,11 +398,57 @@ export default function ParcelMap({ data }) {
         }}
       >
 
+        {/* ============================================= */}
+        {/* RETURN BUTTON */}
+        {/* ============================================= */}
+
+        <button
+
+          onClick={returnToParcel}
+
+          style={{
+
+            width: '100%',
+
+            padding: 16,
+
+            marginBottom: 20,
+
+            borderRadius: 16,
+
+            border: 'none',
+
+            background: '#00FF99',
+
+            color: 'black',
+
+            fontWeight: 'bold',
+
+            cursor: 'pointer',
+
+            fontSize: 16
+          }}
+        >
+
+          <FaHome />
+
+          {' '}
+
+          Return To Parcel
+
+        </button>
+
+        {/* ============================================= */}
+        {/* TITLE */}
+        {/* ============================================= */}
+
         <h2>
           Intelligence
         </h2>
 
+        {/* ============================================= */}
         {/* MAP STYLE */}
+        {/* ============================================= */}
 
         <div
           style={{
@@ -331,7 +488,60 @@ export default function ParcelMap({ data }) {
 
         </div>
 
+        {/* ============================================= */}
+        {/* TRAVEL MODE */}
+        {/* ============================================= */}
+
+        <div
+          style={{
+            marginBottom: 20
+          }}
+        >
+
+          <h4>
+            Route Mode
+          </h4>
+
+          <select
+
+            value={travelMode}
+
+            onChange={(e) =>
+              setTravelMode(
+                e.target.value
+              )
+            }
+
+            style={{
+              width: '100%',
+              padding: 10,
+              borderRadius: 10
+            }}
+          >
+
+            <option value="driving">
+              Driving
+            </option>
+
+            <option value="walking">
+              Walking
+            </option>
+
+            <option value="bus">
+              Bus
+            </option>
+
+            <option value="train">
+              Train/Subway
+            </option>
+
+          </select>
+
+        </div>
+
+        {/* ============================================= */}
         {/* INFRASTRUCTURE */}
+        {/* ============================================= */}
 
         {infrastructure.map((item, idx) => (
 
@@ -413,9 +623,9 @@ export default function ParcelMap({ data }) {
 
       </div>
 
-      {/* ========================================= */}
+      {/* ================================================= */}
       {/* MAP */}
-      {/* ========================================= */}
+      {/* ================================================= */}
 
       <Map
 
@@ -436,7 +646,7 @@ export default function ParcelMap({ data }) {
 
         style={{
           width: '100%',
-          height: '850px',
+          height: '900px',
           borderRadius: '20px'
         }}
 
@@ -445,7 +655,9 @@ export default function ParcelMap({ data }) {
 
         <NavigationControl />
 
+        {/* ============================================= */}
         {/* PARCEL */}
+        {/* ============================================= */}
 
         <Source
           id="parcel"
@@ -484,7 +696,38 @@ export default function ParcelMap({ data }) {
 
         </Source>
 
+        {/* ============================================= */}
+        {/* ROUTE */}
+        {/* ============================================= */}
+
+        {routeGeoJSON && (
+
+          <Source
+            id="route"
+            type="geojson"
+            data={routeGeoJSON}
+          >
+
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+
+                'line-color': '#00BFFF',
+
+                'line-width': 6,
+
+                'line-opacity': 0.85
+              }}
+            />
+
+          </Source>
+
+        )}
+
+        {/* ============================================= */}
         {/* MARKERS */}
+        {/* ============================================= */}
 
         {infrastructure.map((item, idx) => (
 
@@ -524,7 +767,9 @@ export default function ParcelMap({ data }) {
 
         ))}
 
+        {/* ============================================= */}
         {/* POPUP */}
+        {/* ============================================= */}
 
         {popup && (
 
