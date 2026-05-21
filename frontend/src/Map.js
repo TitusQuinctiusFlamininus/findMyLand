@@ -14,7 +14,9 @@ import Map, {
 
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-import polyline from '@mapbox/polyline'
+import {
+  getRoute
+} from './services/routingService'
 
 import {
   FaHospital,
@@ -32,16 +34,18 @@ import {
   FaUtensils,
   FaLandmark,
   FaBriefcaseMedical,
-  FaHome
+  FaHome,
+  FaWalking,
+  FaCar
 } from 'react-icons/fa'
 
 export default function ParcelMap({ data }) {
 
   const mapRef = useRef(null)
 
-  // ====================================================
+  // =====================================================
   // STATE
-  // ====================================================
+  // =====================================================
 
   const [popup, setPopup] = useState(null)
 
@@ -57,9 +61,12 @@ export default function ParcelMap({ data }) {
   const [travelMode, setTravelMode] =
     useState('driving')
 
-  // ====================================================
+  const [routeInfo, setRouteInfo] =
+    useState(null)
+
+  // =====================================================
   // MAP STYLES
-  // ====================================================
+  // =====================================================
 
   const styles = {
 
@@ -73,9 +80,9 @@ export default function ParcelMap({ data }) {
       'https://api.maptiler.com/maps/dataviz/style.json?key=9OLAYy7YFpmPdRnxMmfS'
   }
 
-  // ====================================================
+  // =====================================================
   // INFRASTRUCTURE
-  // ====================================================
+  // =====================================================
 
   const infrastructure = []
 
@@ -95,9 +102,9 @@ export default function ParcelMap({ data }) {
     })
   }
 
-  // ====================================================
+  // =====================================================
   // POLYGON
-  // ====================================================
+  // =====================================================
 
   const polygon = {
 
@@ -117,9 +124,9 @@ export default function ParcelMap({ data }) {
     }
   }
 
-  // ====================================================
-  // INITIAL FLY
-  // ====================================================
+  // =====================================================
+  // INITIAL CAMERA
+  // =====================================================
 
   useEffect(() => {
 
@@ -143,9 +150,9 @@ export default function ParcelMap({ data }) {
 
   }, [data])
 
-  // ====================================================
-  // PULSE CSS
-  // ====================================================
+  // =====================================================
+  // PULSE ANIMATION
+  // =====================================================
 
   useEffect(() => {
 
@@ -169,9 +176,9 @@ export default function ParcelMap({ data }) {
 
   }, [])
 
-  // ====================================================
+  // =====================================================
   // RETURN TO PARCEL
-  // ====================================================
+  // =====================================================
 
   const returnToParcel = () => {
 
@@ -193,65 +200,82 @@ export default function ParcelMap({ data }) {
       duration: 3500
     })
 
-    setSelectedLocation(null)
-
     setPopup(null)
 
+    setSelectedLocation(null)
+
     setRouteGeoJSON(null)
+
+    setRouteInfo(null)
   }
 
-  // ====================================================
+  // =====================================================
   // ROUTING
-  // ====================================================
+  // =====================================================
 
   const buildRoute = async (item) => {
 
     try {
 
-      let profile = 'driving'
+      const route = await getRoute({
 
-      if (travelMode === 'walking') {
-        profile = 'walking'
-      }
+        startLat: item.lat,
+        startLon: item.lon,
 
-      if (
-        travelMode === 'bus' ||
-        travelMode === 'train'
-      ) {
-        profile = 'driving'
-      }
+        endLat: data.center[0],
+        endLon: data.center[1],
 
-      const url = `
-https://router.project-osrm.org/route/v1/${profile}/
-${item.lon},${item.lat};
-${data.center[1]},${data.center[0]}
-?overview=full&geometries=polyline
-`
+        mode: travelMode
+      })
 
-      const res = await fetch(url)
-
-      const json = await res.json()
-
-      if (!json.routes?.length) return
-
-      const decoded = polyline.decode(
-        json.routes[0].geometry
-      )
-
-      const coordinates = decoded.map(
-        ([lat, lon]) => [lon, lat]
-      )
+      if (!route) return
 
       setRouteGeoJSON({
 
         type: 'Feature',
 
-        geometry: {
+        geometry: route.geometry
+      })
 
-          type: 'LineString',
+      const drivingMinutes =
+        Math.round(
+          route.duration_seconds / 60
+        )
 
-          coordinates
-        }
+      const walkingMinutes =
+        Math.round(
+          route.distance_meters /
+          1.4 /
+          60
+        )
+
+      const busMinutes =
+        Math.round(
+          drivingMinutes * 1.8
+        )
+
+      const trainMinutes =
+        Math.round(
+          drivingMinutes * 1.3
+        )
+
+      setRouteInfo({
+
+        distanceKm:
+          (
+            route.distance_meters / 1000
+          ).toFixed(1),
+
+        drivingMinutes,
+
+        walkingMinutes,
+
+        busMinutes,
+
+        trainMinutes,
+
+        provider:
+          route.provider
       })
 
     } catch (err) {
@@ -260,9 +284,9 @@ ${data.center[1]},${data.center[0]}
     }
   }
 
-  // ====================================================
+  // =====================================================
   // FLY TO LOCATION
-  // ====================================================
+  // =====================================================
 
   const flyToLocation = async (item) => {
 
@@ -293,9 +317,9 @@ ${data.center[1]},${data.center[0]}
     await buildRoute(item)
   }
 
-  // ====================================================
+  // =====================================================
   // ICONS
-  // ====================================================
+  // =====================================================
 
   const categoryIcon = (category) => {
 
@@ -376,9 +400,9 @@ ${data.center[1]},${data.center[0]}
 
           zIndex: 10,
 
-          width: 300,
+          width: 320,
 
-          maxHeight: 750,
+          maxHeight: 850,
 
           overflowY: 'auto',
 
@@ -399,7 +423,7 @@ ${data.center[1]},${data.center[0]}
       >
 
         {/* ============================================= */}
-        {/* RETURN BUTTON */}
+        {/* RETURN */}
         {/* ============================================= */}
 
         <button
@@ -447,7 +471,7 @@ ${data.center[1]},${data.center[0]}
         </h2>
 
         {/* ============================================= */}
-        {/* MAP STYLE */}
+        {/* MAP STYLES */}
         {/* ============================================= */}
 
         <div
@@ -489,17 +513,17 @@ ${data.center[1]},${data.center[0]}
         </div>
 
         {/* ============================================= */}
-        {/* TRAVEL MODE */}
+        {/* TRANSPORT MODE */}
         {/* ============================================= */}
 
         <div
           style={{
-            marginBottom: 20
+            marginBottom: 25
           }}
         >
 
           <h4>
-            Route Mode
+            Transport Mode
           </h4>
 
           <select
@@ -514,8 +538,8 @@ ${data.center[1]},${data.center[0]}
 
             style={{
               width: '100%',
-              padding: 10,
-              borderRadius: 10
+              padding: 12,
+              borderRadius: 12
             }}
           >
 
@@ -538,6 +562,99 @@ ${data.center[1]},${data.center[0]}
           </select>
 
         </div>
+
+        {/* ============================================= */}
+        {/* ROUTE INFO */}
+        {/* ============================================= */}
+
+        {routeInfo && (
+
+          <div
+            style={{
+
+              background: '#2c2c2c',
+
+              padding: 18,
+
+              borderRadius: 16,
+
+              marginBottom: 25
+            }}
+          >
+
+            <h3>
+              Route Intelligence
+            </h3>
+
+            <p>
+              Distance:
+              {' '}
+              {routeInfo.distanceKm} km
+            </p>
+
+            <div
+              style={{
+                marginTop: 15
+              }}
+            >
+
+              <div>
+                <FaCar />
+                {' '}
+                Driving:
+                {' '}
+                {routeInfo.drivingMinutes}
+                {' '}
+                mins
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8
+                }}
+              >
+                <FaWalking />
+                {' '}
+                Walking:
+                {' '}
+                {routeInfo.walkingMinutes}
+                {' '}
+                mins
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8
+                }}
+              >
+                <FaBus />
+                {' '}
+                Bus:
+                {' '}
+                {routeInfo.busMinutes}
+                {' '}
+                mins
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8
+                }}
+              >
+                <FaTrain />
+                {' '}
+                Train:
+                {' '}
+                {routeInfo.trainMinutes}
+                {' '}
+                mins
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
 
         {/* ============================================= */}
         {/* INFRASTRUCTURE */}
@@ -646,7 +763,7 @@ ${data.center[1]},${data.center[0]}
 
         style={{
           width: '100%',
-          height: '900px',
+          height: '950px',
           borderRadius: '20px'
         }}
 
@@ -717,7 +834,7 @@ ${data.center[1]},${data.center[0]}
 
                 'line-width': 6,
 
-                'line-opacity': 0.85
+                'line-opacity': 0.9
               }}
             />
 

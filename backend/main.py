@@ -7,6 +7,7 @@ from PIL import Image
 
 from shapely.geometry import Polygon
 from geopy.distance import geodesic
+from routing.router import get_route
 
 import pytesseract
 import requests
@@ -40,6 +41,15 @@ class Coordinate(BaseModel):
 class ParcelRequest(BaseModel):
     coordinates: list[Coordinate]
 
+class RouteRequest(BaseModel):
+
+    start_lat: float
+    start_lon: float
+
+    end_lat: float
+    end_lon: float
+
+    mode: str = "driving"
 # =========================================================
 # HELPERS
 # =========================================================
@@ -431,6 +441,28 @@ async def root():
     return {
         "message": "findMyLand running"
     }
+
+# =========================================================
+# ROUTING 
+# =========================================================
+
+@app.post("/route")
+async def route_api(
+    request: RouteRequest
+):
+
+    route = get_route(
+
+        request.start_lon,
+        request.start_lat,
+
+        request.end_lon,
+        request.end_lat,
+
+        request.mode
+    )
+
+    return route
 
 # =========================================================
 # MANUAL PARCEL
