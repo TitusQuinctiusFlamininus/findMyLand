@@ -13,87 +13,37 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import {
   FaHospital,
   FaSchool,
-  FaBus
+  FaBus,
+  FaUniversity,
+  FaHotel,
+  FaGasPump,
+  FaStore,
+  FaTrain,
+  FaPlane,
+  FaTree,
+  FaShieldAlt,
+  FaFire,
+  FaClinicMedical,
+  FaUtensils,
+  FaLandmark,
+  FaBriefcaseMedical
 } from 'react-icons/fa'
 
 export default function ParcelMap({ data }) {
 
   const mapRef = useRef(null)
 
-  const [mapStyle, setMapStyle] = useState(
-    'streets'
-  )
-
   const [popup, setPopup] = useState(null)
 
-  // ------------------------------------------------
-  // Fly-to animation
-  // ------------------------------------------------
+  const [selectedLocation, setSelectedLocation] =
+    useState(null)
 
-  useEffect(() => {
+  const [mapStyle, setMapStyle] =
+    useState('dataviz')
 
-    if (!mapRef.current) return
-
-    mapRef.current.flyTo({
-      center: [
-        data.center[1],
-        data.center[0]
-      ],
-      zoom: 15,
-      duration: 4000
-    })
-
-  }, [data])
-
-  // ------------------------------------------------
-  // Parcel polygon
-  // ------------------------------------------------
-
-  const polygon = {
-    type: 'Feature',
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        ...data.coordinates.map(
-          ([lat, lon]) => [lon, lat]
-        )
-      ]]
-    }
-  }
-
-  // ------------------------------------------------
-  // Infrastructure markers
-  // ------------------------------------------------
-
-  const infrastructure = []
-
-  if (data.infrastructure?.hospital) {
-
-    infrastructure.push({
-      type: 'hospital',
-      ...data.infrastructure.hospital
-    })
-  }
-
-  if (data.infrastructure?.school) {
-
-    infrastructure.push({
-      type: 'school',
-      ...data.infrastructure.school
-    })
-  }
-
-  if (data.infrastructure?.bus_stop) {
-
-    infrastructure.push({
-      type: 'bus',
-      ...data.infrastructure.bus_stop
-    })
-  }
-
-  // ------------------------------------------------
-  // Map style URLs
-  // ------------------------------------------------
+  // =====================================================
+  // STYLES
+  // =====================================================
 
   const styles = {
 
@@ -107,6 +57,191 @@ export default function ParcelMap({ data }) {
       'https://api.maptiler.com/maps/dataviz/style.json?key=9OLAYy7YFpmPdRnxMmfS'
   }
 
+  // =====================================================
+  // INFRASTRUCTURE
+  // =====================================================
+
+  const infrastructure = []
+
+  if (data.infrastructure) {
+
+    Object.entries(
+      data.infrastructure
+    ).forEach(([key, value]) => {
+
+      if (value) {
+
+        infrastructure.push({
+          category: key,
+          ...value
+        })
+      }
+    })
+  }
+
+  // =====================================================
+  // POLYGON
+  // =====================================================
+
+  const polygon = {
+
+    type: 'Feature',
+
+    geometry: {
+
+      type: 'Polygon',
+
+      coordinates: [[
+
+        ...data.coordinates.map(
+          ([lat, lon]) => [lon, lat]
+        )
+
+      ]]
+    }
+  }
+
+  // =====================================================
+  // MAP FLYTO
+  // =====================================================
+
+  useEffect(() => {
+
+    if (!mapRef.current) return
+
+    mapRef.current.flyTo({
+
+      center: [
+        data.center[1],
+        data.center[0]
+      ],
+
+      zoom: 14,
+
+      pitch: 55,
+
+      bearing: -20,
+
+      duration: 4000
+    })
+
+  }, [data])
+
+  // =====================================================
+  // PULSE CSS
+  // =====================================================
+
+  useEffect(() => {
+
+    const style = document.createElement('style')
+
+    style.innerHTML = `
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.35);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    `
+
+    document.head.appendChild(style)
+
+  }, [])
+
+  // =====================================================
+  // FLY TO LOCATION
+  // =====================================================
+
+  const flyToLocation = (item) => {
+
+    if (!mapRef.current) return
+
+    mapRef.current.flyTo({
+
+      center: [
+        item.lon,
+        item.lat
+      ],
+
+      zoom: 16,
+
+      pitch: 65,
+
+      bearing: -25,
+
+      duration: 3500,
+
+      essential: true
+    })
+
+    setPopup(item)
+
+    setSelectedLocation(item.category)
+  }
+
+  // =====================================================
+  // ICONS
+  // =====================================================
+
+  const categoryIcon = (category) => {
+
+    switch(category) {
+
+      case 'hospital':
+        return <FaHospital color="red" />
+
+      case 'school':
+        return <FaSchool color="blue" />
+
+      case 'bus_stop':
+        return <FaBus color="green" />
+
+      case 'university':
+        return <FaUniversity color="purple" />
+
+      case 'hotel':
+        return <FaHotel color="orange" />
+
+      case 'bank':
+        return <FaLandmark color="gold" />
+
+      case 'fuel':
+        return <FaGasPump color="black" />
+
+      case 'supermarket':
+        return <FaStore color="pink" />
+
+      case 'railway':
+        return <FaTrain color="brown" />
+
+      case 'airport':
+        return <FaPlane color="gray" />
+
+      case 'park':
+        return <FaTree color="green" />
+
+      case 'police':
+        return <FaShieldAlt color="navy" />
+
+      case 'fire_station':
+        return <FaFire color="orangered" />
+
+      case 'pharmacy':
+        return <FaClinicMedical color="teal" />
+
+      case 'restaurant':
+        return <FaUtensils color="darkred" />
+
+      default:
+        return '📍'
+    }
+  }
+
   return (
 
     <div
@@ -115,91 +250,202 @@ export default function ParcelMap({ data }) {
       }}
     >
 
-      {/* ----------------------------------------- */}
-      {/* MAP STYLE SWITCHER */}
-      {/* ----------------------------------------- */}
+      {/* ========================================= */}
+      {/* SIDEBAR */}
+      {/* ========================================= */}
 
       <div
         style={{
+
           position: 'absolute',
-          zIndex: 10,
-          top: 20,
+
           left: 20,
-          background: 'white',
-          padding: 10,
-          borderRadius: 12,
+
+          top: 20,
+
+          zIndex: 10,
+
+          width: 280,
+
+          maxHeight: 700,
+
+          overflowY: 'auto',
+
+          background:
+            'rgba(20,20,20,0.92)',
+
+          color: 'white',
+
+          padding: 20,
+
+          borderRadius: 20,
+
+          backdropFilter: 'blur(10px)',
+
           boxShadow:
-            '0 4px 12px rgba(0,0,0,0.15)'
+            '0 10px 30px rgba(0,0,0,0.4)'
         }}
       >
 
-        <button
-          onClick={() =>
-            setMapStyle('streets')
-          }
-        >
-          Streets
-        </button>
+        <h2>
+          Intelligence
+        </h2>
 
-        <button
-          onClick={() =>
-            setMapStyle('satellite')
-          }
+        {/* MAP STYLE */}
+
+        <div
           style={{
-            marginLeft: 10
+            marginBottom: 20
           }}
         >
-          Satellite
-        </button>
 
-        <button
-          onClick={() =>
-            setMapStyle('dataviz')
-          }
-          style={{
-            marginLeft: 10
-          }}
-        >
-          Dataviz
-        </button>
+          <button
+            onClick={() =>
+              setMapStyle('streets')
+            }
+          >
+            Streets
+          </button>
+
+          <button
+            onClick={() =>
+              setMapStyle('satellite')
+            }
+            style={{
+              marginLeft: 8
+            }}
+          >
+            Satellite
+          </button>
+
+          <button
+            onClick={() =>
+              setMapStyle('dataviz')
+            }
+            style={{
+              marginLeft: 8
+            }}
+          >
+            Dataviz
+          </button>
+
+        </div>
+
+        {/* INFRASTRUCTURE */}
+
+        {infrastructure.map((item, idx) => (
+
+          <button
+
+            key={idx}
+
+            onClick={() =>
+              flyToLocation(item)
+            }
+
+            style={{
+
+              width: '100%',
+
+              textAlign: 'left',
+
+              marginBottom: 12,
+
+              padding: 14,
+
+              borderRadius: 14,
+
+              border: 'none',
+
+              cursor: 'pointer',
+
+              background:
+                selectedLocation === item.category
+                  ? '#00FF99'
+                  : '#2a2a2a',
+
+              color:
+                selectedLocation === item.category
+                  ? 'black'
+                  : 'white',
+
+              transition: 'all 0.3s ease'
+            }}
+          >
+
+            <div
+              style={{
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10
+              }}
+            >
+
+              {categoryIcon(item.category)}
+
+              {item.category}
+
+            </div>
+
+            <div
+              style={{
+                fontSize: 13,
+                marginTop: 6,
+                opacity: 0.8
+              }}
+            >
+              {item.name}
+            </div>
+
+            <div
+              style={{
+                fontSize: 12,
+                marginTop: 4
+              }}
+            >
+              {item.distance_km} km away
+            </div>
+
+          </button>
+
+        ))}
 
       </div>
 
-      {/* ----------------------------------------- */}
+      {/* ========================================= */}
       {/* MAP */}
-      {/* ----------------------------------------- */}
+      {/* ========================================= */}
 
       <Map
 
         ref={mapRef}
 
         initialViewState={{
+
           longitude: data.center[1],
+
           latitude: data.center[0],
+
           zoom: 14,
+
           pitch: 45,
-          bearing: -17
+
+          bearing: -20
         }}
 
         style={{
           width: '100%',
-          height: '800px',
+          height: '850px',
           borderRadius: '20px'
         }}
 
         mapStyle={styles[mapStyle]}
-
       >
-
-        {/* ------------------------------------- */}
-        {/* NAVIGATION */}
-        {/* ------------------------------------- */}
 
         <NavigationControl />
 
-        {/* ------------------------------------- */}
         {/* PARCEL */}
-        {/* ------------------------------------- */}
 
         <Source
           id="parcel"
@@ -207,18 +453,14 @@ export default function ParcelMap({ data }) {
           data={polygon}
         >
 
-          {/* Parcel Fill */}
-
           <Layer
             id="parcel-fill"
             type="fill"
             paint={{
               'fill-color': '#00FF99',
-              'fill-opacity': 0.25
+              'fill-opacity': 0.22
             }}
           />
-
-          {/* Parcel Glow */}
 
           <Layer
             id="parcel-glow"
@@ -227,11 +469,9 @@ export default function ParcelMap({ data }) {
               'line-color': '#00FF99',
               'line-width': 8,
               'line-opacity': 0.4,
-              'line-blur': 4
+              'line-blur': 5
             }}
           />
-
-          {/* Parcel Outline */}
 
           <Layer
             id="parcel-outline"
@@ -244,69 +484,56 @@ export default function ParcelMap({ data }) {
 
         </Source>
 
-        {/* ------------------------------------- */}
-        {/* INFRASTRUCTURE MARKERS */}
-        {/* ------------------------------------- */}
+        {/* MARKERS */}
 
-        {infrastructure.map(
-          (item, idx) => (
+        {infrastructure.map((item, idx) => (
 
-            <Marker
-              key={idx}
-              longitude={
-                item.lon ||
-                data.center[1]
+          <Marker
+
+            key={idx}
+
+            longitude={item.lon}
+
+            latitude={item.lat}
+          >
+
+            <div
+
+              onClick={() =>
+                flyToLocation(item)
               }
-              latitude={
-                item.lat ||
-                data.center[0]
-              }
+
+              style={{
+
+                cursor: 'pointer',
+
+                fontSize: 28,
+
+                animation:
+                  selectedLocation === item.category
+                    ? 'pulse 1.5s infinite'
+                    : 'none'
+              }}
             >
 
-              <div
-                onClick={() =>
-                  setPopup(item)
-                }
-                style={{
-                  cursor: 'pointer',
-                  fontSize: 28
-                }}
-              >
+              {categoryIcon(item.category)}
 
-                {item.type === 'hospital' && (
-                  <FaHospital color="red" />
-                )}
+            </div>
 
-                {item.type === 'school' && (
-                  <FaSchool color="blue" />
-                )}
+          </Marker>
 
-                {item.type === 'bus' && (
-                  <FaBus color="green" />
-                )}
+        ))}
 
-              </div>
-
-            </Marker>
-
-          )
-        )}
-
-        {/* ------------------------------------- */}
         {/* POPUP */}
-        {/* ------------------------------------- */}
 
         {popup && (
 
           <Popup
-            longitude={
-              popup.lon ||
-              data.center[1]
-            }
-            latitude={
-              popup.lat ||
-              data.center[0]
-            }
+
+            longitude={popup.lon}
+
+            latitude={popup.lat}
+
             onClose={() =>
               setPopup(null)
             }
@@ -319,9 +546,11 @@ export default function ParcelMap({ data }) {
               </h3>
 
               <p>
-                Distance:
-                {' '}
-                {popup.distance_km} km
+                {popup.category}
+              </p>
+
+              <p>
+                {popup.distance_km} km away
               </p>
 
             </div>

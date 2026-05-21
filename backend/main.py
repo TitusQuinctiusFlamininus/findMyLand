@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 
 # =========================================================
-# FASTAPI SETUP
+# FASTAPI
 # =========================================================
 
 app = FastAPI()
@@ -41,7 +41,7 @@ class ParcelRequest(BaseModel):
     coordinates: list[Coordinate]
 
 # =========================================================
-# BASIC HELPERS
+# HELPERS
 # =========================================================
 
 def calculate_center(coords):
@@ -64,9 +64,6 @@ def polygon_area(coords):
 
     return poly.area
 
-# =========================================================
-# TXT COORD PARSING
-# =========================================================
 
 def parse_coordinate_text(text):
 
@@ -94,107 +91,14 @@ def parse_coordinate_text(text):
     return coords
 
 # =========================================================
-# OCR HELPERS
-# =========================================================
-
-def extract_coordinates(text):
-
-    pattern = r"(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)"
-
-    matches = re.findall(pattern, text)
-
-    coords = []
-
-    for lat, lon in matches:
-
-        coords.append((
-            float(lat),
-            float(lon)
-        ))
-
-    return coords
-
-
-def pdf_first_page_image(content):
-
-    pages = convert_from_bytes(content)
-
-    page = pages[0]
-
-    return np.array(page)
-
-# =========================================================
-# POLYGON DETECTION
-# =========================================================
-
-def detect_polygons(image):
-
-    gray = cv2.cvtColor(
-        image,
-        cv2.COLOR_RGB2GRAY
-    )
-
-    blurred = cv2.GaussianBlur(
-        gray,
-        (5, 5),
-        0
-    )
-
-    edges = cv2.Canny(
-        blurred,
-        50,
-        150
-    )
-
-    contours, _ = cv2.findContours(
-        edges,
-        cv2.RETR_TREE,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    polygons = []
-
-    for contour in contours:
-
-        epsilon = (
-            0.02 *
-            cv2.arcLength(contour, True)
-        )
-
-        approx = cv2.approxPolyDP(
-            contour,
-            epsilon,
-            True
-        )
-
-        area = cv2.contourArea(contour)
-
-        if len(approx) >= 4 and area > 1000:
-
-            points = []
-
-            for point in approx:
-
-                x, y = point[0]
-
-                points.append((
-                    int(x),
-                    int(y)
-                ))
-
-            polygons.append(points)
-
-    return polygons
-
-# =========================================================
-# GEOSPATIAL QUERIES
+# OVERPASS
 # =========================================================
 
 def nearest_place(lat, lon, amenity):
 
-    # ------------------------------------------
-    # SPECIAL CASE: TOWNS
-    # ------------------------------------------
+    # -----------------------------------------
+    # TOWNS
+    # -----------------------------------------
 
     if amenity == "town":
 
@@ -207,9 +111,9 @@ def nearest_place(lat, lon, amenity):
         out center;
         """
 
-    # ------------------------------------------
-    # SPECIAL CASE: BUS STOPS
-    # ------------------------------------------
+    # -----------------------------------------
+    # BUS STOPS
+    # -----------------------------------------
 
     elif amenity == "bus_station":
 
@@ -222,9 +126,53 @@ def nearest_place(lat, lon, amenity):
         out center;
         """
 
-    # ------------------------------------------
-    # NORMAL AMENITIES
-    # ------------------------------------------
+    # -----------------------------------------
+    # AIRPORTS
+    # -----------------------------------------
+
+    elif amenity == "airport":
+
+        query = f"""
+        [out:json];
+        (
+          node["aeroway"="aerodrome"](around:50000,{lat},{lon});
+          way["aeroway"="aerodrome"](around:50000,{lat},{lon});
+        );
+        out center;
+        """
+
+    # -----------------------------------------
+    # RAILWAY
+    # -----------------------------------------
+
+    elif amenity == "railway_station":
+
+        query = f"""
+        [out:json];
+        (
+          node["railway"="station"](around:10000,{lat},{lon});
+          way["railway"="station"](around:10000,{lat},{lon});
+        );
+        out center;
+        """
+
+    # -----------------------------------------
+    # PARKS
+    # -----------------------------------------
+
+    elif amenity == "park":
+
+        query = f"""
+        [out:json];
+        (
+          way["leisure"="park"](around:10000,{lat},{lon});
+        );
+        out center;
+        """
+
+    # -----------------------------------------
+    # DEFAULT
+    # -----------------------------------------
 
     else:
 
@@ -238,9 +186,6 @@ def nearest_place(lat, lon, amenity):
         out center;
         """
 
-    print("\n========================")
-    print("OVERPASS QUERY")
-    print("========================")
     print(query)
 
     url = "https://overpass-api.de/api/interpreter"
@@ -256,13 +201,7 @@ def nearest_place(lat, lon, amenity):
             timeout=20
         )
 
-        print("STATUS:", r.status_code)
-        print("BODY:", r.text[:300])
-
         if r.status_code != 200:
-            return None
-
-        if not r.text.strip():
             return None
 
         data = r.json()
@@ -272,18 +211,10 @@ def nearest_place(lat, lon, amenity):
 
         place = data["elements"][0]
 
-        # --------------------------------------
-        # NODE
-        # --------------------------------------
-
         if "lat" in place:
 
             place_lat = place["lat"]
             place_lon = place["lon"]
-
-        # --------------------------------------
-        # WAY / RELATION
-        # --------------------------------------
 
         elif "center" in place:
 
@@ -324,7 +255,7 @@ def nearest_place(lat, lon, amenity):
         return None
 
 # =========================================================
-# ROAD DETECTION
+# ROADS
 # =========================================================
 
 def nearest_road(lat, lon):
@@ -403,10 +334,27 @@ def nearest_road(lat, lon):
 def infrastructure_intelligence(lat, lon):
 
     categories = {
+
         "hospital": "hospital",
         "school": "school",
+        "pharmacy": "pharmacy",
+        "police": "police",
+        "fire_station": "fire_station",
+
         "bus_stop": "bus_station",
-        "town": "town"
+        "airport": "airport",
+        "railway": "railway_station",
+
+        "bank": "bank",
+        "fuel": "fuel",
+        "supermarket": "supermarket",
+        "restaurant": "restaurant",
+        "hotel": "hotel",
+
+        "town": "town",
+        "university": "university",
+
+        "park": "park"
     }
 
     results = {}
@@ -429,76 +377,42 @@ def land_intelligence_summary(
     road
 ):
 
-    if not infrastructure:
-        infrastructure = {}
-
-    if not road:
-        road = {}
-
     score = 0
 
     insights = []
 
-    bus = infrastructure.get("bus_stop")
-
-    if (
-        bus and
-        bus["distance_km"] < 5
-    ):
-
-        score += 2
-
-        insights.append(
-            "Good public transport access"
-        )
-
-    school = infrastructure.get("school")
-
-    if (
-        school and
-        school["distance_km"] < 10
-    ):
-
+    if infrastructure.get("hospital"):
         score += 1
-
         insights.append(
-            "Schools nearby"
+            "Healthcare nearby"
         )
 
-    hospital = infrastructure.get("hospital")
-
-    if (
-        hospital and
-        hospital["distance_km"] < 15
-    ):
-
+    if infrastructure.get("school"):
         score += 1
-
         insights.append(
-            "Healthcare accessible"
+            "Education access"
         )
 
-    if (
-        road and
-        road["distance_km"] < 2
-    ):
-
+    if infrastructure.get("bus_stop"):
         score += 2
-
         insights.append(
-            "Strong road accessibility"
+            "Transit connectivity"
+        )
+
+    if road:
+        score += 2
+        insights.append(
+            "Road access available"
         )
 
     classification = "Rural"
 
     if score >= 5:
-
         classification = (
             "High Development Potential"
         )
 
     elif score >= 3:
-
         classification = "Peri-Urban"
 
     return {
@@ -515,7 +429,7 @@ def land_intelligence_summary(
 async def root():
 
     return {
-        "message": "findMyLand backend running"
+        "message": "findMyLand running"
     }
 
 # =========================================================
@@ -527,31 +441,17 @@ async def manual_parcel(
     parcel: ParcelRequest
 ):
 
-    print("MANUAL PARCEL ENDPOINT HIT")
-
     coords = [
         (c.lat, c.lon)
         for c in parcel.coordinates
     ]
 
-    # close polygon automatically
-
     if coords[0] != coords[-1]:
-
         coords.append(coords[0])
-
-    if len(coords) < 4:
-
-        return {
-            "error":
-            "At least 4 coordinates required"
-        }
 
     center = calculate_center(coords)
 
     area = polygon_area(coords)
-
-    print("BEFORE INFRASTRUCTURE")
 
     infrastructure = (
         infrastructure_intelligence(
@@ -572,8 +472,6 @@ async def manual_parcel(
         )
     )
 
-    print("AFTER INFRASTRUCTURE")
-
     return {
 
         "coordinates": coords,
@@ -590,7 +488,7 @@ async def manual_parcel(
     }
 
 # =========================================================
-# TXT COORDINATE UPLOAD
+# TXT COORD UPLOAD
 # =========================================================
 
 @app.post("/upload-coordinates")
@@ -604,17 +502,7 @@ async def upload_coordinates(
 
     coords = parse_coordinate_text(text)
 
-    if len(coords) < 4:
-
-        return {
-            "error":
-            "Need at least 4 coordinates"
-        }
-
-    # close polygon
-
     if coords[0] != coords[-1]:
-
         coords.append(coords[0])
 
     center = calculate_center(coords)
@@ -653,38 +541,4 @@ async def upload_coordinates(
         "road_access": road,
 
         "intelligence": intelligence
-    }
-
-# =========================================================
-# OCR DOCUMENT UPLOAD
-# =========================================================
-
-@app.post("/upload")
-async def upload_document(
-    file: UploadFile = File(...)
-):
-
-    content = await file.read()
-
-    image = pdf_first_page_image(content)
-
-    pil_image = Image.fromarray(image)
-
-    text = pytesseract.image_to_string(
-        pil_image
-    )
-
-    coords = extract_coordinates(text)
-
-    polygons = detect_polygons(image)
-
-    return {
-
-        "coordinates": coords,
-
-        "polygon_count": len(polygons),
-
-        "polygons": polygons[:10],
-
-        "raw_text": text[:4000]
     }
