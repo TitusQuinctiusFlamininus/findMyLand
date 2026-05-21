@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API =
-  'http://localhost:8000'
+  'http://localhost:8000/manual-parcel'
 
 export async function getRoute({
 

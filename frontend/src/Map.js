@@ -47,7 +47,8 @@ export default function ParcelMap({ data }) {
   // STATE
   // =====================================================
 
-  const [popup, setPopup] = useState(null)
+  const [popup, setPopup] =
+    useState(null)
 
   const [selectedLocation, setSelectedLocation] =
     useState(null)
@@ -95,7 +96,9 @@ export default function ParcelMap({ data }) {
       if (value) {
 
         infrastructure.push({
+
           category: key,
+
           ...value
         })
       }
@@ -135,7 +138,9 @@ export default function ParcelMap({ data }) {
     mapRef.current.flyTo({
 
       center: [
+
         data.center[1],
+
         data.center[0]
       ],
 
@@ -151,21 +156,38 @@ export default function ParcelMap({ data }) {
   }, [data])
 
   // =====================================================
+  // ROUTE REBUILD
+  // =====================================================
+
+  useEffect(() => {
+
+    if (popup) {
+
+      buildRoute(popup)
+    }
+
+  }, [travelMode])
+
+  // =====================================================
   // PULSE ANIMATION
   // =====================================================
 
   useEffect(() => {
 
-    const style = document.createElement('style')
+    const style =
+      document.createElement('style')
 
     style.innerHTML = `
       @keyframes pulse {
+
         0% {
           transform: scale(1);
         }
+
         50% {
           transform: scale(1.35);
         }
+
         100% {
           transform: scale(1);
         }
@@ -187,7 +209,9 @@ export default function ParcelMap({ data }) {
     mapRef.current.flyTo({
 
       center: [
+
         data.center[1],
+
         data.center[0]
       ],
 
@@ -210,6 +234,31 @@ export default function ParcelMap({ data }) {
   }
 
   // =====================================================
+  // ROUTE COLORS
+  // =====================================================
+
+  const routeColor = () => {
+
+    switch(travelMode) {
+
+      case 'driving':
+        return '#00BFFF'
+
+      case 'walking':
+        return '#00FF99'
+
+      case 'bus':
+        return '#FFD700'
+
+      case 'train':
+        return '#FF00FF'
+
+      default:
+        return '#00BFFF'
+    }
+  }
+
+  // =====================================================
   // ROUTING
   // =====================================================
 
@@ -217,18 +266,34 @@ export default function ParcelMap({ data }) {
 
     try {
 
+      console.log(
+        'BUILD ROUTE:',
+        travelMode
+      )
+
       const route = await getRoute({
 
         startLat: item.lat,
+
         startLon: item.lon,
 
         endLat: data.center[0],
+
         endLon: data.center[1],
 
         mode: travelMode
       })
 
+      console.log(
+        'ROUTE RESPONSE:',
+        route
+      )
+
       if (!route) return
+
+      // ==========================================
+      // GEOJSON
+      // ==========================================
 
       setRouteGeoJSON({
 
@@ -237,50 +302,93 @@ export default function ParcelMap({ data }) {
         geometry: route.geometry
       })
 
-      const drivingMinutes =
+      // ==========================================
+      // DURATION
+      // ==========================================
+
+      const durationMinutes =
         Math.round(
           route.duration_seconds / 60
         )
 
-      const walkingMinutes =
-        Math.round(
-          route.distance_meters /
-          1.4 /
-          60
-        )
+      // ==========================================
+      // TRANSPORT TIMES
+      // ==========================================
 
-      const busMinutes =
-        Math.round(
-          drivingMinutes * 1.8
-        )
+      const routeTimes = {
 
-      const trainMinutes =
-        Math.round(
-          drivingMinutes * 1.3
-        )
+        drivingMinutes: null,
+
+        walkingMinutes: null,
+
+        busMinutes: null,
+
+        trainMinutes: null
+      }
+
+      if (
+        route.mode === 'driving'
+      ) {
+
+        routeTimes.drivingMinutes =
+          durationMinutes
+      }
+
+      if (
+        route.mode === 'walking'
+      ) {
+
+        routeTimes.walkingMinutes =
+          durationMinutes
+      }
+
+      if (
+        route.mode === 'bus'
+      ) {
+
+        routeTimes.busMinutes =
+          durationMinutes
+      }
+
+      if (
+        route.mode === 'train' ||
+        route.mode === 'subway'
+      ) {
+
+        routeTimes.trainMinutes =
+          durationMinutes
+      }
+
+      // ==========================================
+      // ROUTE INFO
+      // ==========================================
 
       setRouteInfo({
 
         distanceKm:
+
           (
             route.distance_meters / 1000
           ).toFixed(1),
 
-        drivingMinutes,
-
-        walkingMinutes,
-
-        busMinutes,
-
-        trainMinutes,
-
         provider:
-          route.provider
+          route.provider,
+
+        mode:
+          route.mode,
+
+        nearestStop:
+          route.nearest_stop,
+
+        ...routeTimes
       })
 
     } catch (err) {
 
-      console.error(err)
+      console.error(
+        'ROUTING ERROR:',
+        err
+      )
     }
   }
 
@@ -295,7 +403,9 @@ export default function ParcelMap({ data }) {
     mapRef.current.flyTo({
 
       center: [
+
         item.lon,
+
         item.lat
       ],
 
@@ -312,13 +422,15 @@ export default function ParcelMap({ data }) {
 
     setPopup(item)
 
-    setSelectedLocation(item.category)
+    setSelectedLocation(
+      item.category
+    )
 
     await buildRoute(item)
   }
 
   // =====================================================
-  // ICONS
+  // CATEGORY ICONS
   // =====================================================
 
   const categoryIcon = (category) => {
@@ -365,15 +477,83 @@ export default function ParcelMap({ data }) {
         return <FaFire color="orangered" />
 
       case 'pharmacy':
+
         return (
           <FaBriefcaseMedical color="teal" />
         )
 
       case 'restaurant':
-        return <FaUtensils color="darkred" />
+
+        return (
+          <FaUtensils color="darkred" />
+        )
 
       default:
         return '📍'
+    }
+  }
+
+  // =====================================================
+  // TRANSPORT BUTTON STYLE
+  // =====================================================
+
+  const transportButtonStyle = (
+    mode
+  ) => {
+
+    let activeColor = '#00BFFF'
+
+    if (mode === 'walking') {
+      activeColor = '#00FF99'
+    }
+
+    if (mode === 'bus') {
+      activeColor = '#FFD700'
+    }
+
+    if (mode === 'train') {
+      activeColor = '#FF00FF'
+    }
+
+    return {
+
+      width: 60,
+
+      height: 60,
+
+      borderRadius: '50%',
+
+      border: 'none',
+
+      cursor: 'pointer',
+
+      background:
+
+        travelMode === mode
+
+          ? activeColor
+
+          : '#2a2a2a',
+
+      color:
+
+        travelMode === mode
+
+          ? 'black'
+
+          : 'white',
+
+      fontSize: 24,
+
+      transition: 'all 0.3s ease',
+
+      boxShadow:
+
+        travelMode === mode
+
+          ? `0 0 20px ${activeColor}`
+
+          : 'none'
     }
   }
 
@@ -400,9 +580,9 @@ export default function ParcelMap({ data }) {
 
           zIndex: 10,
 
-          width: 320,
+          width: 340,
 
-          maxHeight: 850,
+          maxHeight: 950,
 
           overflowY: 'auto',
 
@@ -442,7 +622,7 @@ export default function ParcelMap({ data }) {
 
             border: 'none',
 
-            background: '#00FF99',
+            background: '#ff6600',
 
             color: 'black',
 
@@ -513,7 +693,7 @@ export default function ParcelMap({ data }) {
         </div>
 
         {/* ============================================= */}
-        {/* TRANSPORT MODE */}
+        {/* TRANSPORT MODES */}
         {/* ============================================= */}
 
         <div
@@ -526,40 +706,99 @@ export default function ParcelMap({ data }) {
             Transport Mode
           </h4>
 
-          <select
-
-            value={travelMode}
-
-            onChange={(e) =>
-              setTravelMode(
-                e.target.value
-              )
-            }
-
+          <div
             style={{
-              width: '100%',
-              padding: 12,
-              borderRadius: 12
+              display: 'flex',
+              gap: 12,
+              marginTop: 10
             }}
           >
 
-            <option value="driving">
-              Driving
-            </option>
+            {/* CAR */}
 
-            <option value="walking">
-              Walking
-            </option>
+            <button
 
-            <option value="bus">
-              Bus
-            </option>
+              onClick={() =>
+                setTravelMode(
+                  'driving'
+                )
+              }
 
-            <option value="train">
-              Train/Subway
-            </option>
+              style={
+                transportButtonStyle(
+                  'driving'
+                )
+              }
+            >
 
-          </select>
+              <FaCar />
+
+            </button>
+
+            {/* WALK */}
+
+            <button
+
+              onClick={() =>
+                setTravelMode(
+                  'walking'
+                )
+              }
+
+              style={
+                transportButtonStyle(
+                  'walking'
+                )
+              }
+            >
+
+              <FaWalking />
+
+            </button>
+
+            {/* BUS */}
+
+            <button
+
+              onClick={() =>
+                setTravelMode(
+                  'bus'
+                )
+              }
+
+              style={
+                transportButtonStyle(
+                  'bus'
+                )
+              }
+            >
+
+              <FaBus />
+
+            </button>
+
+            {/* TRAIN */}
+
+            <button
+
+              onClick={() =>
+                setTravelMode(
+                  'train'
+                )
+              }
+
+              style={
+                transportButtonStyle(
+                  'train'
+                )
+              }
+            >
+
+              <FaTrain />
+
+            </button>
+
+          </div>
 
         </div>
 
@@ -592,63 +831,169 @@ export default function ParcelMap({ data }) {
               {routeInfo.distanceKm} km
             </p>
 
+            <p>
+              Provider:
+              {' '}
+              {routeInfo.provider}
+            </p>
+
+            <p>
+              Mode:
+              {' '}
+              {routeInfo.mode}
+            </p>
+
+            {routeInfo.nearestStop && (
+
+              <div
+                style={{
+                  marginTop: 15
+                }}
+              >
+
+                <h4>
+                  Transit Stops
+                </h4>
+
+                <div>
+
+                  Origin:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .nearestStop
+                      .origin
+                  }
+
+                </div>
+
+                <div>
+
+                  Destination:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .nearestStop
+                      .destination
+                  }
+
+                </div>
+
+              </div>
+
+            )}
+
             <div
               style={{
                 marginTop: 15
               }}
             >
 
-              <div>
-                <FaCar />
-                {' '}
-                Driving:
-                {' '}
-                {routeInfo.drivingMinutes}
-                {' '}
-                mins
-              </div>
+              {routeInfo.drivingMinutes && (
 
-              <div
-                style={{
-                  marginTop: 8
-                }}
-              >
-                <FaWalking />
-                {' '}
-                Walking:
-                {' '}
-                {routeInfo.walkingMinutes}
-                {' '}
-                mins
-              </div>
+                <div>
 
-              <div
-                style={{
-                  marginTop: 8
-                }}
-              >
-                <FaBus />
-                {' '}
-                Bus:
-                {' '}
-                {routeInfo.busMinutes}
-                {' '}
-                mins
-              </div>
+                  <FaCar color="#00BFFF" />
 
-              <div
-                style={{
-                  marginTop: 8
-                }}
-              >
-                <FaTrain />
-                {' '}
-                Train:
-                {' '}
-                {routeInfo.trainMinutes}
-                {' '}
-                mins
-              </div>
+                  {' '}
+
+                  Driving:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .drivingMinutes
+                  }
+
+                  {' '}
+                  mins
+
+                </div>
+
+              )}
+
+              {routeInfo.walkingMinutes && (
+
+                <div
+                  style={{
+                    marginTop: 8
+                  }}
+                >
+
+                  <FaWalking color="#00FF99" />
+
+                  {' '}
+
+                  Walking:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .walkingMinutes
+                  }
+
+                  {' '}
+                  mins
+
+                </div>
+
+              )}
+
+              {routeInfo.busMinutes && (
+
+                <div
+                  style={{
+                    marginTop: 8
+                  }}
+                >
+
+                  <FaBus color="#FFD700" />
+
+                  {' '}
+
+                  Bus:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .busMinutes
+                  }
+
+                  {' '}
+                  mins
+
+                </div>
+
+              )}
+
+              {routeInfo.trainMinutes && (
+
+                <div
+                  style={{
+                    marginTop: 8
+                  }}
+                >
+
+                  <FaTrain color="#FF00FF" />
+
+                  {' '}
+
+                  Train:
+                  {' '}
+
+                  {
+                    routeInfo
+                      .trainMinutes
+                  }
+
+                  {' '}
+                  mins
+
+                </div>
+
+              )}
 
             </div>
 
@@ -687,13 +1032,19 @@ export default function ParcelMap({ data }) {
               cursor: 'pointer',
 
               background:
+
                 selectedLocation === item.category
+
                   ? '#00FF99'
+
                   : '#2a2a2a',
 
               color:
+
                 selectedLocation === item.category
+
                   ? 'black'
+
                   : 'white',
 
               transition: 'all 0.3s ease'
@@ -702,14 +1053,22 @@ export default function ParcelMap({ data }) {
 
             <div
               style={{
+
                 fontWeight: 'bold',
+
                 display: 'flex',
+
                 alignItems: 'center',
+
                 gap: 10
               }}
             >
 
-              {categoryIcon(item.category)}
+              {
+                categoryIcon(
+                  item.category
+                )
+              }
 
               {item.category}
 
@@ -722,7 +1081,9 @@ export default function ParcelMap({ data }) {
                 opacity: 0.8
               }}
             >
+
               {item.name}
+
             </div>
 
             <div
@@ -731,7 +1092,9 @@ export default function ParcelMap({ data }) {
                 marginTop: 4
               }}
             >
+
               {item.distance_km} km away
+
             </div>
 
           </button>
@@ -763,7 +1126,7 @@ export default function ParcelMap({ data }) {
 
         style={{
           width: '100%',
-          height: '950px',
+          height: '1000px',
           borderRadius: '20px'
         }}
 
@@ -830,7 +1193,7 @@ export default function ParcelMap({ data }) {
               type="line"
               paint={{
 
-                'line-color': '#00BFFF',
+                'line-color': routeColor(),
 
                 'line-width': 6,
 
@@ -870,13 +1233,20 @@ export default function ParcelMap({ data }) {
                 fontSize: 28,
 
                 animation:
+
                   selectedLocation === item.category
+
                     ? 'pulse 1.5s infinite'
+
                     : 'none'
               }}
             >
 
-              {categoryIcon(item.category)}
+              {
+                categoryIcon(
+                  item.category
+                )
+              }
 
             </div>
 

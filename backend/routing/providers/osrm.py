@@ -5,10 +5,13 @@ OSRM_URL = (
 )
 
 def route(
+
     start_lon,
     start_lat,
+
     end_lon,
     end_lat,
+
     mode="driving"
 ):
 
@@ -18,6 +21,7 @@ def route(
         profile = "walking"
 
     url = (
+
         f"{OSRM_URL}/route/v1/"
         f"{profile}/"
         f"{start_lon},{start_lat};"
@@ -25,19 +29,25 @@ def route(
     )
 
     params = {
+
         "overview": "full",
+
         "geometries": "geojson"
     }
 
     r = requests.get(
+
         url,
+
         params=params,
+
         timeout=20
     )
 
     data = r.json()
 
     if not data.get("routes"):
+
         return None
 
     route = data["routes"][0]
@@ -45,6 +55,8 @@ def route(
     return {
 
         "provider": "osrm",
+
+        "mode": mode,
 
         "distance_meters":
             route["distance"],

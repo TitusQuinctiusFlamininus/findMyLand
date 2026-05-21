@@ -1,166 +1,161 @@
 import { useState } from 'react'
+
 import axios from 'axios'
+
 import dynamic from 'next/dynamic'
 
-const Map = dynamic(
+const ParcelMap = dynamic(
+
   () => import('../src/Map'),
+
   {
-    ssr: false,
+    ssr: false
   }
 )
 
 export default function Home() {
 
-  // --------------------------------------------------
+  // =====================================================
   // STATE
-  // --------------------------------------------------
+  // =====================================================
 
-  const [file, setFile] = useState(null)
+  const [coordinatesText, setCoordinatesText] =
+    useState('')
 
-  const [coordFile, setCoordFile] = useState(null)
+  const [loading, setLoading] =
+    useState(false)
 
-  const [result, setResult] = useState(null)
+  const [error, setError] =
+    useState(null)
 
-  const [loading, setLoading] = useState(false)
+  const [mapData, setMapData] =
+    useState(null)
 
-  const [coordinates, setCoordinates] = useState([
-    { lat: '', lon: '' },
-    { lat: '', lon: '' },
-    { lat: '', lon: '' },
-    { lat: '', lon: '' }
-  ])
+  // =====================================================
+  // PARSE COORDINATES
+  // =====================================================
 
-  // --------------------------------------------------
-  // DOCUMENT OCR UPLOAD
-  // --------------------------------------------------
+  const parseCoordinates = (text) => {
 
-  const upload = async () => {
+    const lines = text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
 
-    if (!file) {
-      alert('Select a file first')
-      return
-    }
+    const coordinates = []
 
-    const formData = new FormData()
+    for (const line of lines) {
 
-    formData.append('file', file)
+      const parts = line
+        .split(',')
 
-    try {
-
-      setLoading(true)
-
-      const res = await axios.post(
-        'http://localhost:8000/upload',
-        formData
-      )
-
-      setResult(res.data)
-
-    } catch (err) {
-
-      console.error(err)
-
-      alert(
-        err.response?.data?.detail ||
-        err.message ||
-        'Upload failed'
-      )
-
-    } finally {
-
-      setLoading(false)
-    }
-  }
-
-  // --------------------------------------------------
-  // MANUAL COORDINATE ENTRY
-  // --------------------------------------------------
-
-  const updateCoordinate = (
-    index,
-    field,
-    value
-  ) => {
-
-    const updated = [...coordinates]
-
-    updated[index][field] = value
-
-    setCoordinates(updated)
-  }
-
-  const submitManualCoordinates = async () => {
-
-    try {
-
-      const payload = {
-        coordinates: coordinates.map(c => ({
-          lat: parseFloat(c.lat),
-          lon: parseFloat(c.lon)
-        }))
+      if (parts.length !== 2) {
+        continue
       }
 
-      setLoading(true)
-
-      const res = await axios.post(
-        'http://localhost:8000/manual-parcel',
-        payload
+      const lat = parseFloat(
+        parts[0].trim()
       )
 
-      setResult(res.data)
-
-    } catch (err) {
-
-      console.error(err)
-
-      alert(
-        err.response?.data?.detail ||
-        err.message ||
-        'Failed to process parcel'
+      const lon = parseFloat(
+        parts[1].trim()
       )
 
-    } finally {
+      if (
+        isNaN(lat) ||
+        isNaN(lon)
+      ) {
+        continue
+      }
 
-      setLoading(false)
+      coordinates.push([
+        lat,
+        lon
+      ])
     }
+
+    return coordinates
   }
 
-  // --------------------------------------------------
-  // TXT COORDINATE FILE UPLOAD
-  // --------------------------------------------------
+  // =====================================================
+  // UPLOAD COORDINATES FILE
+  // =====================================================
 
-  const uploadCoordinateFile = async () => {
+  const handleFileUpload = async (
+    event
+  ) => {
 
-    if (!coordFile) {
+    const file =
+      event.target.files[0]
 
-      alert('Select coordinate file')
+    if (!file) return
+
+    const text =
+      await file.text()
+
+    setCoordinatesText(text)
+  }
+
+  // =====================================================
+  // SUBMIT
+  // =====================================================
+
+  const handleSubmit = async () => {
+
+    setError(null)
+
+    const coordinates =
+      parseCoordinates(
+        coordinatesText
+      )
+
+    if (coordinates.length < 4) {
+
+      setError(
+        'Please provide at least 4 coordinate lines.'
+      )
 
       return
     }
-
-    const formData = new FormData()
-
-    formData.append('file', coordFile)
 
     try {
 
       setLoading(true)
 
-      const res = await axios.post(
-        'http://localhost:8000/upload-coordinates',
-        formData
+      console.log(
+        'SENDING COORDINATES:',
+        coordinates
       )
 
-      setResult(res.data)
+      // ==========================================
+      // BACKEND REQUEST
+      // ==========================================
+
+      const response =
+        await axios.post(
+
+          'http://localhost:8000/manual-parcel',
+
+          {
+            coordinates
+          }
+        )
+
+      console.log(
+        'BACKEND RESPONSE:',
+        response.data
+      )
+
+      setMapData(
+        response.data
+      )
 
     } catch (err) {
 
       console.error(err)
 
-      alert(
-        err.response?.data?.detail ||
-        err.message ||
-        'Coordinate upload failed'
+      setError(
+        'Failed to analyze parcel.'
       )
 
     } finally {
@@ -169,417 +164,239 @@ export default function Home() {
     }
   }
 
-  // --------------------------------------------------
+  // =====================================================
   // UI
-  // --------------------------------------------------
+  // =====================================================
 
   return (
 
     <div
       style={{
-        padding: 20,
-        fontFamily: 'Arial',
-        maxWidth: 1200,
-        margin: '0 auto'
+        padding: 30,
+        fontFamily: 'Arial'
       }}
     >
 
-      {/* -------------------------------------------------- */}
+      {/* ============================================= */}
       {/* HEADER */}
-      {/* -------------------------------------------------- */}
+      {/* ============================================= */}
 
-      <h1>findMyLand MVP</h1>
+      <h1
+        style={{
+          fontSize: 40,
+          marginBottom: 10
+        }}
+      >
 
-      <p>
-        Upload land coordinates or a cadastral
-        document to generate parcel intelligence.
+        FindMyLand
+
+      </h1>
+
+      <p
+        style={{
+          marginBottom: 30,
+          color: '#666'
+        }}
+      >
+
+        Upload parcel coordinates and
+        explore infrastructure,
+        routing intelligence,
+        transport access,
+        and nearby amenities.
+
       </p>
 
-      {/* -------------------------------------------------- */}
-      {/* DOCUMENT UPLOAD */}
-      {/* -------------------------------------------------- */}
+      {/* ============================================= */}
+      {/* INPUT PANEL */}
+      {/* ============================================= */}
 
       <div
         style={{
-          border: '1px solid #ddd',
-          borderRadius: 10,
-          padding: 20,
+
+          background: '#f5f5f5',
+
+          padding: 25,
+
+          borderRadius: 20,
+
           marginBottom: 30
         }}
       >
 
-        <h2>Upload Cadastral Document</h2>
-
-        <p>
-          PDF/image OCR workflow.
-        </p>
-
-        <input
-          type="file"
-          onChange={(e) =>
-            setFile(e.target.files[0])
-          }
-        />
-
-        <br />
-        <br />
-
-        <button onClick={upload}>
-          Upload & Analyze
-        </button>
-
-      </div>
-
-      {/* -------------------------------------------------- */}
-      {/* MANUAL COORDINATES */}
-      {/* -------------------------------------------------- */}
-
-      <div
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 10,
-          padding: 20,
-          marginBottom: 30
-        }}
-      >
-
-        <h2>Manual Coordinates</h2>
-
-        <p>
-          Enter 4 parcel corner coordinates.
-        </p>
-
-        {coordinates.map((coord, index) => (
-
-          <div
-            key={index}
-            style={{
-              display: 'flex',
-              gap: 10,
-              marginBottom: 10
-            }}
-          >
-
-            <input
-              type="number"
-              step="any"
-              placeholder="Latitude"
-              value={coord.lat}
-              onChange={(e) =>
-                updateCoordinate(
-                  index,
-                  'lat',
-                  e.target.value
-                )
-              }
-              style={{
-                width: 220,
-                padding: 10
-              }}
-            />
-
-            <input
-              type="number"
-              step="any"
-              placeholder="Longitude"
-              value={coord.lon}
-              onChange={(e) =>
-                updateCoordinate(
-                  index,
-                  'lon',
-                  e.target.value
-                )
-              }
-              style={{
-                width: 220,
-                padding: 10
-              }}
-            />
-
-          </div>
-
-        ))}
-
-        <br />
-
-        <button onClick={submitManualCoordinates}>
-          Analyze Manual Parcel
-        </button>
-
-      </div>
-
-      {/* -------------------------------------------------- */}
-      {/* TXT FILE COORDINATE UPLOAD */}
-      {/* -------------------------------------------------- */}
-
-      <div
-        style={{
-          border: '1px solid #ddd',
-          borderRadius: 10,
-          padding: 20,
-          marginBottom: 30
-        }}
-      >
-
-        <h2>Upload Coordinate TXT File</h2>
-
-        <p>
-          Upload a .txt file with one coordinate
-          pair per line (For example, see below).
-        </p>
-
-        <pre
-          style={{
-            background: '#f5f5f5',
-            padding: 15,
-            overflowX: 'auto'
-          }}
-        >
-{`-1.2921,36.8219
--1.2925,36.8230
--1.2935,36.8225
--1.2930,36.8215`}
-        </pre>
-
-        <input
-          type="file"
-          accept=".txt"
-          onChange={(e) =>
-            setCoordFile(e.target.files[0])
-          }
-        />
-
-        <br />
-        <br />
-
-        <button onClick={uploadCoordinateFile}>
-          Upload Coordinate File
-        </button>
-
-      </div>
-
-      {/* -------------------------------------------------- */}
-      {/* LOADING */}
-      {/* -------------------------------------------------- */}
-
-      {loading && (
+        {/* ========================================= */}
+        {/* FILE UPLOAD */}
+        {/* ========================================= */}
 
         <div
           style={{
-            background: '#f5f5f5',
-            padding: 20,
-            marginBottom: 20,
-            borderRadius: 10
+            marginBottom: 20
           }}
         >
 
-          Analyzing parcel intelligence...
+          <h3>
+            Upload Coordinates File
+          </h3>
 
-        </div>
+          <p>
+            Text file format:
+          </p>
 
-      )}
-
-      {/* -------------------------------------------------- */}
-      {/* RESULTS */}
-      {/* -------------------------------------------------- */}
-
-      {result && (
-
-        <div>
-
-          <h2>Parcel Intelligence</h2>
-
-          {/* ------------------------------------------ */}
-          {/* MAP */}
-          {/* ------------------------------------------ */}
-
-          <div
+          <pre
             style={{
-              marginBottom: 30
+
+              background: 'white',
+
+              padding: 15,
+
+              borderRadius: 10
             }}
           >
 
-            <Map data={result} />
+{`52.5200,13.4050
+52.5205,13.4060
+52.5195,13.4065
+52.5190,13.4055`}
 
-          </div>
+          </pre>
 
-          {/* ------------------------------------------ */}
-          {/* RAW JSON */}
-          {/* ------------------------------------------ */}
+          <input
 
-          <div
+            type="file"
+
+            accept=".txt"
+
+            onChange={
+              handleFileUpload
+            }
+          />
+
+        </div>
+
+        {/* ========================================= */}
+        {/* TEXTAREA */}
+        {/* ========================================= */}
+
+        <div
+          style={{
+            marginBottom: 20
+          }}
+        >
+
+          <h3>
+            Or Paste Coordinates
+          </h3>
+
+          <textarea
+
+            value={coordinatesText}
+
+            onChange={(e) =>
+              setCoordinatesText(
+                e.target.value
+              )
+            }
+
+            rows={10}
+
+            placeholder={
+              'latitude,longitude'
+            }
+
             style={{
-              background: '#f8f8f8',
-              padding: 20,
-              marginBottom: 30,
+
+              width: '100%',
+
+              padding: 15,
+
               borderRadius: 10,
-              overflowX: 'auto'
+
+              border:
+                '1px solid #ccc',
+
+              fontFamily:
+                'monospace',
+
+              fontSize: 14
+            }}
+          />
+
+        </div>
+
+        {/* ========================================= */}
+        {/* BUTTON */}
+        {/* ========================================= */}
+
+        <button
+
+          onClick={handleSubmit}
+
+          disabled={loading}
+
+          style={{
+
+            padding:
+              '16px 32px',
+
+            background:
+              '#00cc88',
+
+            color: 'white',
+
+            border: 'none',
+
+            borderRadius: 12,
+
+            cursor: 'pointer',
+
+            fontSize: 18,
+
+            fontWeight: 'bold'
+          }}
+        >
+
+          {loading
+
+            ? 'Analyzing Parcel...'
+
+            : 'Analyze Land'}
+
+        </button>
+
+        {/* ========================================= */}
+        {/* ERROR */}
+        {/* ========================================= */}
+
+        {error && (
+
+          <div
+            style={{
+
+              marginTop: 20,
+
+              color: 'red',
+
+              fontWeight: 'bold'
             }}
           >
 
-            <h3>Raw Response</h3>
-
-            <pre>
-              {JSON.stringify(
-                result,
-                null,
-                2
-              )}
-            </pre>
+            {error}
 
           </div>
 
-          {/* ------------------------------------------ */}
-          {/* INTELLIGENCE OVERLAY */}
-          {/* ------------------------------------------ */}
+        )}
 
-          {result.intelligence && (
+      </div>
 
-            <div
-              style={{
-                border: '1px solid #ddd',
-                borderRadius: 10,
-                padding: 20,
-                background: '#fafafa',
-                marginBottom: 30
-              }}
-            >
+      {/* ============================================= */}
+      {/* MAP */}
+      {/* ============================================= */}
 
-              <h2>
-                Intelligence Overlay
-              </h2>
+      {mapData && (
 
-              {/* ---------------------------------- */}
-              {/* CLASSIFICATION */}
-              {/* ---------------------------------- */}
-
-              <div
-                style={{
-                  marginBottom: 20
-                }}
-              >
-
-                <h3>
-                  Classification
-                </h3>
-
-                <p
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {
-                    result.intelligence
-                      .classification
-                  }
-                </p>
-
-              </div>
-
-              {/* ---------------------------------- */}
-              {/* SCORE */}
-              {/* ---------------------------------- */}
-
-              <div
-                style={{
-                  marginBottom: 20
-                }}
-              >
-
-                <h3>
-                  Development Score
-                </h3>
-
-                <p
-                  style={{
-                    fontSize: 20
-                  }}
-                >
-                  {
-                    result.intelligence
-                      .score
-                  }
-                  {' '} / 10
-                </p>
-
-              </div>
-
-              {/* ---------------------------------- */}
-              {/* INSIGHTS */}
-              {/* ---------------------------------- */}
-
-              <div
-                style={{
-                  marginBottom: 20
-                }}
-              >
-
-                <h3>Insights</h3>
-
-                <ul>
-
-                  {result.intelligence.insights.map(
-                    (insight, idx) => (
-
-                      <li key={idx}>
-                        {insight}
-                      </li>
-
-                    )
-                  )}
-
-                </ul>
-
-              </div>
-
-              {/* ---------------------------------- */}
-              {/* INFRASTRUCTURE */}
-              {/* ---------------------------------- */}
-
-              <div
-                style={{
-                  marginBottom: 20
-                }}
-              >
-
-                <h3>
-                  Nearby Infrastructure
-                </h3>
-
-                <pre>
-                  {JSON.stringify(
-                    result.infrastructure,
-                    null,
-                    2
-                  )}
-                </pre>
-
-              </div>
-
-              {/* ---------------------------------- */}
-              {/* ROAD ACCESS */}
-              {/* ---------------------------------- */}
-
-              <div>
-
-                <h3>Road Access</h3>
-
-                <pre>
-                  {JSON.stringify(
-                    result.road_access,
-                    null,
-                    2
-                  )}
-                </pre>
-
-              </div>
-
-            </div>
-
-          )}
-
-        </div>
+        <ParcelMap
+          data={mapData}
+        />
 
       )}
 
