@@ -78,7 +78,7 @@ export default function ParcelMap({
 
   const mapStyle =
 
-    `https://api.maptiler.com/maps/dataviz-dark/style.json?key=9OLAYy7YFpmPdRnxMmfS`
+    `https://api.maptiler.com/maps/dataviz-dark/style.json?key=SOME_API_KEY`
 
   // =====================================================
   // FILTER INFRASTRUCTURE
