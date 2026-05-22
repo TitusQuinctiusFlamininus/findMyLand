@@ -16,12 +16,8 @@ def route(
 ):
 
     print("\n====================")
-    print("OTP.PY ROUTE CALLED")
+    print("OTP ROUTE CALLED")
     print("====================")
-
-    print("OTP URL:", OTP_URL)
-
-    print("MODE:", mode)
 
     try:
 
@@ -56,11 +52,6 @@ def route(
             r.status_code
         )
 
-        print(
-            "OTP RESPONSE:",
-            r.text[:1000]
-        )
-
         data = r.json()
 
         if "plan" not in data:
@@ -79,17 +70,103 @@ def route(
 
         itinerary = itineraries[0]
 
-        coordinates = []
+        # ==========================================
+        # FULL LEG EXTRACTION
+        # ==========================================
+
+        legs = []
+
+        geometry_coordinates = []
 
         for leg in itinerary["legs"]:
 
-            coordinates.append([
+            leg_data = {
+
+                "mode":
+                    leg.get("mode"),
+
+                "route":
+                    leg.get("route"),
+
+                "agency":
+                    leg.get("agencyName"),
+
+                "distance":
+                    leg.get("distance"),
+
+                "duration":
+                    leg.get("duration"),
+
+                "startTime":
+                    leg.get("startTime"),
+
+                "endTime":
+                    leg.get("endTime"),
+
+                "instruction":
+
+                    f"{leg.get('mode')} from "
+
+                    f"{leg['from'].get('name')} "
+
+                    f"to "
+
+                    f"{leg['to'].get('name')}",
+
+                "from": {
+
+                    "name":
+
+                        leg["from"].get(
+                            "name"
+                        ),
+
+                    "lat":
+
+                        leg["from"].get(
+                            "lat"
+                        ),
+
+                    "lon":
+
+                        leg["from"].get(
+                            "lon"
+                        )
+                },
+
+                "to": {
+
+                    "name":
+
+                        leg["to"].get(
+                            "name"
+                        ),
+
+                    "lat":
+
+                        leg["to"].get(
+                            "lat"
+                        ),
+
+                    "lon":
+
+                        leg["to"].get(
+                            "lon"
+                        )
+                }
+            }
+
+            legs.append(
+                leg_data
+            )
+
+            geometry_coordinates.append([
 
                 leg["from"]["lon"],
                 leg["from"]["lat"]
             ])
 
-            coordinates.append([
+            geometry_coordinates.append([
 
                 leg["to"]["lon"],
                 leg["to"]["lat"]
@@ -102,12 +179,14 @@ def route(
             "mode": mode,
 
             "distance_meters":
+
                 itinerary.get(
                     "walkDistance",
                     0
                 ),
 
             "duration_seconds":
+
                 itinerary.get(
                     "duration",
                     0
@@ -117,14 +196,12 @@ def route(
 
                 "type": "LineString",
 
-                "coordinates": coordinates
+                "coordinates":
+                    geometry_coordinates
             },
 
             "legs":
-                itinerary.get(
-                    "legs",
-                    []
-                )
+                legs
         }
 
     except Exception as e:

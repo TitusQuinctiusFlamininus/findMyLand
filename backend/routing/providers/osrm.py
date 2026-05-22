@@ -32,7 +32,9 @@ def route(
 
         "overview": "full",
 
-        "geometries": "geojson"
+        "geometries": "geojson",
+
+        "steps": "true"
     }
 
     r = requests.get(
@@ -41,7 +43,7 @@ def route(
 
         params=params,
 
-        timeout=20
+        timeout=30
     )
 
     data = r.json()
@@ -51,6 +53,48 @@ def route(
         return None
 
     route = data["routes"][0]
+
+    legs = []
+
+    # ==========================================
+    # STEP EXTRACTION
+    # ==========================================
+
+    for leg in route["legs"]:
+
+        for step in leg["steps"]:
+
+            maneuver = (
+                step.get("maneuver", {})
+            )
+
+            legs.append({
+
+                "mode": mode,
+
+                "instruction":
+
+                    maneuver.get(
+                        "instruction"
+                    ),
+
+                "name":
+                    step.get("name"),
+
+                "distance":
+                    step.get("distance"),
+
+                "duration":
+                    step.get("duration"),
+
+                "type":
+                    maneuver.get("type"),
+
+                "modifier":
+                    maneuver.get(
+                        "modifier"
+                    )
+            })
 
     return {
 
@@ -65,5 +109,8 @@ def route(
             route["duration"],
 
         "geometry":
-            route["geometry"]
+            route["geometry"],
+
+        "legs":
+            legs
     }
