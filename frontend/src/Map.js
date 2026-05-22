@@ -877,43 +877,34 @@ export default function ParcelMap({
 
                           display: 'flex',
 
-                          gap: 10,
+                          gap: 12,
 
-                          marginBottom: 12,
+                          marginBottom: 14,
 
-                          alignItems:
-                            'flex-start'
+                          alignItems: 'flex-start'
                         }}
                       >
 
-                        {/* =========================== */}
-                        {/* ICON */}
-                        {/* =========================== */}
+                        {/* ===================================== */}
+                        {/* TURN ICON */}
+                        {/* ===================================== */}
 
                         <div
                           style={{
-                            marginTop: 3
+                            marginTop: 2,
+                            fontSize: 18
                           }}
                         >
 
-                          {leg.mode === 'WALK'
-                            ? <FaWalking color="#00ffaa" />
-                            : leg.mode === 'BUS'
-                            ? <FaBus color="#ffd700" />
-                            : leg.mode === 'RAIL'
-                            ? <FaTrain color="#ff00ff" />
-                            : leg.mode === 'SUBWAY'
-                            ? <FaSubway color="#ff00ff" />
-                            : turnIcon(
-                                leg.instruction
-                              )
-                          }
+                          {turnIcon(
+                            leg.instruction
+                          )}
 
                         </div>
 
-                        {/* =========================== */}
+                        {/* ===================================== */}
                         {/* TEXT */}
-                        {/* =========================== */}
+                        {/* ===================================== */}
 
                         <div
                           style={{
@@ -921,70 +912,56 @@ export default function ParcelMap({
                           }}
                         >
 
-                          {/* ======================= */}
-                          {/* TRAIN/BUS */}
-                          {/* ======================= */}
+                          {/* =============================== */}
+                          {/* INSTRUCTION */}
+                          {/* =============================== */}
 
-                          {(leg.route ||
-                            leg.agency) ? (
+                          <div
+                            style={{
 
-                            <div>
+                              fontSize: 13,
 
-                              <div
-                                style={{
-                                  fontWeight: 'bold',
-                                  fontSize: 13
-                                }}
-                              >
+                              fontWeight: 'bold',
 
-                                {leg.route}
+                              lineHeight: 1.4
+                            }}
+                          >
 
-                                {' '}
+                            {leg.instruction}
 
-                                {leg.mode}
+                          </div>
 
-                              </div>
+                          {/* =============================== */}
+                          {/* STREET */}
+                          {/* =============================== */}
 
-                              <div
-                                style={{
-                                  fontSize: 12,
-                                  opacity: 0.7
-                                }}
-                              >
-
-                                {leg.from?.name}
-
-                                {' → '}
-
-                                {leg.to?.name}
-
-                              </div>
-
-                            </div>
-
-                          ) : (
+                          {leg.street && (
 
                             <div
                               style={{
-                                fontSize: 13,
-                                lineHeight: 1.4
+
+                                fontSize: 12,
+
+                                opacity: 0.7,
+
+                                marginTop: 2
                               }}
                             >
 
-                              {leg.instruction}
+                              {leg.street}
 
                             </div>
 
                           )}
 
-                          {/* ======================= */}
-                          {/* META */}
-                          {/* ======================= */}
+                          {/* =============================== */}
+                          {/* DISTANCE + TIME */}
+                          {/* =============================== */}
 
                           <div
                             style={{
 
-                              marginTop: 3,
+                              marginTop: 4,
 
                               fontSize: 11,
 
@@ -992,9 +969,9 @@ export default function ParcelMap({
                             }}
                           >
 
-                            {(
-                              leg.distance / 1000
-                            ).toFixed(1)} km
+                            {Math.round(
+                              leg.distance
+                            )} m
 
                             {' • '}
 

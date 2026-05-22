@@ -4,6 +4,57 @@ OSRM_URL = (
     "https://router.project-osrm.org"
 )
 
+# =========================================================
+# BUILD INSTRUCTION
+# =========================================================
+
+def build_instruction(step):
+
+    maneuver = (
+        step.get("maneuver", {})
+    )
+
+    modifier = maneuver.get(
+        "modifier",
+        ""
+    )
+
+    street = step.get(
+        "name",
+        ""
+    )
+
+    maneuver_type = maneuver.get(
+        "type",
+        ""
+    )
+
+    if maneuver_type == "depart":
+
+        return (
+            f"Start on {street}"
+        )
+
+    if maneuver_type == "arrive":
+
+        return (
+            "You have arrived"
+        )
+
+    if modifier:
+
+        return (
+            f"Turn {modifier} onto {street}"
+        )
+
+    return (
+        f"Continue on {street}"
+    )
+
+# =========================================================
+# ROUTE
+# =========================================================
+
 def route(
 
     start_lon,
@@ -34,7 +85,9 @@ def route(
 
         "geometries": "geojson",
 
-        "steps": "true"
+        "steps": "true",
+
+        "annotations": "true"
     }
 
     r = requests.get(
@@ -54,45 +107,65 @@ def route(
 
     route = data["routes"][0]
 
-    legs = []
+    navigation_steps = []
 
-    # ==========================================
-    # STEP EXTRACTION
-    # ==========================================
+    cumulative_duration = 0
+
+    cumulative_distance = 0
+
+    # =====================================================
+    # TRUE TURN-BY-TURN
+    # =====================================================
 
     for leg in route["legs"]:
 
         for step in leg["steps"]:
 
-            maneuver = (
-                step.get("maneuver", {})
+            distance = step.get(
+                "distance",
+                0
             )
 
-            legs.append({
+            duration = step.get(
+                "duration",
+                0
+            )
+
+            cumulative_distance += distance
+            cumulative_duration += duration
+
+            navigation_steps.append({
 
                 "mode": mode,
 
                 "instruction":
 
-                    maneuver.get(
-                        "instruction"
+                    build_instruction(
+                        step
                     ),
 
-                "name":
-                    step.get("name"),
+                "street":
+
+                    step.get(
+                        "name"
+                    ),
 
                 "distance":
-                    step.get("distance"),
+                    distance,
 
                 "duration":
-                    step.get("duration"),
+                    duration,
 
-                "type":
-                    maneuver.get("type"),
+                "cumulative_distance":
+                    cumulative_distance,
 
-                "modifier":
-                    maneuver.get(
-                        "modifier"
+                "cumulative_duration":
+                    cumulative_duration,
+
+                "maneuver":
+                    step.get(
+                        "maneuver",
+                        {}
                     )
             })
 
@@ -112,5 +185,5 @@ def route(
             route["geometry"],
 
         "legs":
-            legs
+            navigation_steps
     }
