@@ -6,7 +6,7 @@
 
 FindMyLand is a geospatial **land-intelligence prototype** that takes the boundary coordinates of a land parcel, places that parcel on an interactive map, and enriches it with nearby infrastructure, amenities, and transport information.
 
-![alt text](https://github.com/TitusQuinctiusFlamininus/findMyLand/blob/main/images/findMyLand1.png "UX")
+![alt text](https://github.com/TitusQuinctiusFlamininus/findMyLand/blob/main/images/findMyLand1.png =250x250 "UX")
 
 A cadastral map answers a very specific question:
 
