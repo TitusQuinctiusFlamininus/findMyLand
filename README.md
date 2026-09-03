@@ -41,9 +41,10 @@ That context can be useful when exploring land for:
 In an advanced practical version of this application, if parcel land-value trends can be mapped relative to the context in which the parcel is presented (its surroundings and rate of growth), one could, for example, find out how fast parcel land value may increase or decrease in the future.
 
 ---
-
-# License: GNU AGPLv3
+## License: GNU AGPLv3
  Please Note: This is a Strict open source license. It requires anyone who modifies the software and offers it as a network service (like a cloud-based SaaS application) to make the entire source code available to network users.
+
+ ---
  
 ## ✨ Key features
 
