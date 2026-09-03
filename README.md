@@ -1,4 +1,5 @@
-# FindMyLand
+# FindMyLand: The Land Intelligence App
+![alt text](https://github.com/TitusQuinctiusFlamininus/findMyLand/blob/main/images/findMyLand_logo.png "findMyLandLogo")
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
