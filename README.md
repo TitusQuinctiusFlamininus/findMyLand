@@ -122,7 +122,8 @@ FindMyLand currently consists of a Next.js frontend and a Python/FastAPI backend
 ### Prerequisites
 
 You will need:
-- Maptiler Account for an API KEY (see frontend Map.js to add your key here). PLEASE NOTE DISCLAIMER: This repository assumes you have your OWN key and does not promise anything or assume any costs associated with YOUR personal use of the maptiler API through your key. See: https://docs.maptiler.com/cloud/api/#description/introduction
+- Maptiler Account for an API KEY (see frontend Map.js to add your key here).
+  **PLEASE NOTE DISCLAIMER**: This repository assumes you have **your OWN key and does not promise anything or assume any costs associated with YOUR personal use of the Maptiler API through YOUR key**. See: https://docs.maptiler.com/cloud/api/#description/introduction for more information about integrating your API KEY into the app.
 - Node.js and npm
 - Python 3
 - Internet access for external geographic and routing services
@@ -177,13 +178,11 @@ npm install
 npm run dev
 ```
 
-The frontend is configured to talk to the local backend at:
+Start up the frontend:
 
 ```text
-http://localhost:8000
+http://localhost:3000
 ```
-
-Open the local Next.js URL shown by the development server.
 
 ---
 ## 🚦 Using your own OSRM routing data
