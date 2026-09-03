@@ -1,16 +1,19 @@
 # FindMyLand
 
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+
 > Turn a parcel's coordinates into a map of what surrounds it.
 
 FindMyLand is a geospatial **land-intelligence prototype** that takes the boundary coordinates of a land parcel, places that parcel on an interactive map, and enriches it with nearby infrastructure, amenities, and transport information.
 
-Instead of looking at a cadastral parcel as an isolated polygon, FindMyLand puts it into context: **What is nearby? How far away is it? How can I get there?**
+A cadastral map answers a very specific question:
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+> **Where is this parcel?**
 
----
+FindMyLand aims to expand that question into:
 
-## 🗺️ What does FindMyLand do?
+> **What is this parcel's geographic context?**
+> **What is nearby? How far away is it? How can I get there?**
 
 A parcel boundary tells you **where the land is**. FindMyLand tries to answer the next questions.
 
@@ -24,6 +27,17 @@ A parcel boundary tells you **where the land is**. FindMyLand tries to answer th
 The current application accepts a set of latitude/longitude points describing a parcel, calculates its center, queries nearby geographic features, and presents the results through an interactive map.
 
 The project is therefore best understood as a **parcel-context and accessibility explorer**, rather than a cadastral-management system.
+
+That context can be useful when exploring land for:
+
+- Property research
+- Land acquisition
+- Development studies
+- Site selection
+- Accessibility analysis
+- Rural and urban planning
+- Real-estate due diligence
+- Infrastructure discovery
 
 ---
 
@@ -91,119 +105,6 @@ Route results can include:
 - Routing provider
 - Turn-by-turn journey legs
 - Route geometry displayed on the map
-
----
-
-## 🧩 How it works
-
-At a high level, FindMyLand follows this pipeline:
-
-```text
-Parcel coordinates
-       │
-       ▼
-┌─────────────────┐
-│  Parse boundary │
-│    coordinates   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Calculate parcel│
-│     center      │
-└────────┬────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ Query nearby features│
-│   via OpenStreetMap  │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Find nearest location│
-│   per category       │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Display parcel +     │
-│ infrastructure map   │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Select a destination │
-│ and calculate route  │
-└──────────────────────┘
-```
-
-The backend exposes a small FastAPI service. The frontend is a Next.js/React application with an interactive map.
-
----
-
-## 🖼️ Suggested documentation images
-
-The repository currently has no screenshots in its README. Adding a few real application screenshots would make the project much easier to understand.
-
-I recommend creating an `docs/images/` directory and adding these:
-
-### 1. Parcel overview
-
-**Filename:** `docs/images/parcel-overview.png`
-
-Show the application immediately after analyzing a parcel:
-
-- Parcel polygon clearly visible
-- Map centered on the parcel
-- Infrastructure panel visible
-- Several nearby markers visible
-
-```markdown
-![FindMyLand parcel overview](docs/images/parcel-overview.png)
-```
-
-### 2. Infrastructure intelligence
-
-**Filename:** `docs/images/infrastructure-intelligence.png`
-
-Show the sidebar with the different infrastructure categories and distances.
-
-```markdown
-![FindMyLand infrastructure intelligence](docs/images/infrastructure-intelligence.png)
-```
-
-### 3. Routing
-
-**Filename:** `docs/images/routing.png`
-
-Select a nearby destination and show:
-
-- The route drawn on the map
-- Selected transport mode
-- Distance
-- Estimated travel time
-- Journey legs / directions
-
-```markdown
-![FindMyLand routing](docs/images/routing.png)
-```
-
-### 4. Input example
-
-**Filename:** `docs/images/coordinate-input.png`
-
-Show the coordinate input screen together with a small example coordinate file.
-
-```markdown
-![FindMyLand coordinate input](docs/images/coordinate-input.png)
-```
-
-### Recommended hero image
-
-For the top of the README, the strongest screenshot would be a wide **16:9 view of the analyzed parcel with the surrounding infrastructure and a route visible**.
-
-That image immediately communicates the product without requiring the reader to decode the architecture first.
 
 ---
 
@@ -301,132 +202,11 @@ At least **four valid coordinate lines** are required to create a parcel polygon
 
 ---
 
-## 🏗️ Architecture
-
-```text
-findMyLand/
-│
-├── backend/
-│   ├── main.py
-│   ├── intelligence.py
-│   ├── requirements.txt
-│   └── routing/
-│       ├── router.py
-│       └── providers/
-│           ├── osrm.py
-│           ├── otp.py
-│           └── transitland.py
-│
-├── frontend/
-│   ├── pages/
-│   │   └── index.js
-│   ├── src/
-│   │   ├── Map.js
-│   │   └── services/
-│   └── package.json
-│
-├── parcel.txt
-├── LICENSE
-└── README.md
-```
-
-### Frontend
-
-The frontend is built with:
-
-- React
-- Next.js
-- Axios
-- MapLibre GL
-- React Map GL
-- Leaflet / React Leaflet
-- React Icons
-
-The main map experience lives in `frontend/src/Map.js`.
-
-### Backend
-
-The backend uses:
-
-- FastAPI
-- Uvicorn
-- GeoPandas
-- Shapely
-- GeoPy
-- Requests
-- Pillow
-- Tesseract / `pytesseract`
-- `pdf2image`
-
-The backend currently exposes two important operations:
-
-```text
-POST /manual-parcel
-POST /route
-```
-
-`/manual-parcel` receives parcel coordinates, calculates the center and generates surrounding infrastructure information.
-
-`/route` calculates a route between two geographic points using the requested travel mode.
-
----
-
-## 🌍 External data and services
-
-FindMyLand combines several geospatial services.
-
-### OpenStreetMap / Overpass
-
-Nearby infrastructure is queried from OpenStreetMap data through the Overpass API.
-
-This means the quality and completeness of the nearby-place results depend on the underlying OpenStreetMap coverage for the area being analyzed.
-
-### OSRM
-
-Driving and walking routes are provided through an OSRM-based routing provider.
-
-### OpenTripPlanner
-
-Bus and train routing use an OpenTripPlanner provider when a suitable transit route is available.
-
-### MapTiler / MapLibre
-
-The frontend uses a MapTiler map style through MapLibre GL.
-
-> Before deploying the application publicly, configure the map API key securely rather than committing credentials directly to the source code.
-
----
-
-## 🎯 What makes FindMyLand useful?
-
-A cadastral map answers a very specific question:
-
-> **Where is this parcel?**
-
-FindMyLand aims to expand that question into:
-
-> **What is this parcel's geographic context?**
-
-That context can be useful when exploring land for:
-
-- Property research
-- Land acquisition
-- Development studies
-- Site selection
-- Accessibility analysis
-- Rural and urban planning
-- Real-estate due diligence
-- Infrastructure discovery
-
-The project is particularly interesting because the parcel itself becomes the **anchor point for a broader geographic analysis**.
-
----
-
 ## 🧪 Project status
 
 FindMyLand is an early-stage prototype.
 
-The current implementation already demonstrates the core concept:
+The current implementation already demonstrates the core concept but actual geospatial data file are not included:
 
 **coordinate-based parcel → geographic context → nearby infrastructure → routing**
 
@@ -474,33 +254,4 @@ For legal property boundaries, ownership, zoning, planning permission, or other 
 
 ---
 
-## 🤝 Contributing
 
-Contributions, ideas, bug reports and experiments are welcome.
-
-A good contribution should ideally include:
-
-1. A clear description of the problem or improvement.
-2. Reproducible steps for bugs.
-3. Screenshots or map examples for UI changes.
-4. Documentation updates when behavior changes.
-
----
-
-## 📄 License
-
-FindMyLand is licensed under the **GNU Affero General Public License v3.0**.
-
-See [LICENSE](LICENSE) for the full license text.
-
----
-
-## 🔗 Repository
-
-[github.com/TitusQuinctiusFlamininus/findMyLand](https://github.com/TitusQuinctiusFlamininus/findMyLand)
-
----
-
-## ⭐ In one sentence
-
-**FindMyLand turns a parcel boundary into a geographic intelligence dashboard, showing what surrounds the land and how accessible those places are.**
