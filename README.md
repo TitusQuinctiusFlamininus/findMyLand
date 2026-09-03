@@ -118,7 +118,7 @@ FindMyLand currently consists of a Next.js frontend and a Python/FastAPI backend
 ### Prerequisites
 
 You will need:
-
+- Maptiler Account for an API KEY (see frontend Map.js to add your key here). PLEASE NOTE DISCLAIMER: This repository assumes you have your OWN key and does not promise anything or assume any costs associated with YOUR personal use of the maptiler API through your key. See: https://docs.maptiler.com/cloud/api/#description/introduction
 - Node.js and npm
 - Python 3
 - A MapTiler API key for the map style used by the frontend
