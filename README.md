@@ -8,16 +8,13 @@ FindMyLand is a geospatial **land-intelligence prototype** that takes the bounda
 
 ![alt text](https://github.com/TitusQuinctiusFlamininus/findMyLand/blob/main/images/findMyLand1.png "UX")
 
-A cadastral map answers a very specific question:
+A cadastral map on its own tries to answer question:
 
-> **Where is this parcel?**
+> **What are the dimensions and internal partitions of a parcel.**
+
+But the context of the presentation of that information is quite unknown.  
 
 FindMyLand aims to expand that question into:
-
-> **What is this parcel's geographic context?**
-> **What is nearby? How far away is it? How can I get there?**
-
-A parcel boundary tells you **where the land is**. FindMyLand tries to answer the next questions.
 
 - Where is the parcel located?
 - What hospitals, schools, pharmacies, banks, supermarkets and other amenities are nearby?
@@ -42,6 +39,8 @@ That context can be useful when exploring land for:
 - Rural and urban planning
 - Real-estate due diligence
 - Infrastructure discovery
+
+In an advanced practical version of this application, if parcel land-value trends can be mapped relative to the context in which the parcel is presented (its surroundings and rate of growth), one could, for example, find out how fast parcel land value may increase or decrease in the future.
 
 ---
 
