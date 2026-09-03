@@ -1,9 +1,6 @@
 # FindMyLand: The Land Intelligence App
 ![alt text](https://github.com/TitusQuinctiusFlamininus/findMyLand/blob/main/images/findMyLand_logo.png "findMyLandLogo")
-
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-
-> Turn a parcel's coordinates into a map of what surrounds it.
 
 FindMyLand is a geospatial **land-intelligence prototype** that takes the boundary coordinates of a land parcel, places that parcel on an interactive map, and enriches it with nearby infrastructure, amenities, and transport information.
 
@@ -45,6 +42,9 @@ In an advanced practical version of this application, if parcel land-value trend
 
 ---
 
+# License: GNU AGPLv3
+ Please Note: This is a Strict open source license. It requires anyone who modifies the software and offers it as a network service (like a cloud-based SaaS application) to make the entire source code available to network users.
+ 
 ## ✨ Key features
 
 ### 📍 Parcel visualization
