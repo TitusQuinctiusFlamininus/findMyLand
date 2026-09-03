@@ -244,7 +244,7 @@ docker run -t \
   ghcr.io/project-osrm/osrm-backend \
   osrm-extract \
   -p /opt/car.lua \
-  /data/berlin-latest.osm.pbf
+  /data/CITY_OR_TOWN_OF_YOUR_CHOICE-latest.osm.pbf
 ```
 
 `osrm-extract` reads the OpenStreetMap PBF file and converts it into an intermediate OSRM graph using a routing profile. The `car.lua` profile tells OSRM how to interpret the road network for automobile routing.
@@ -265,7 +265,7 @@ CITY_OR_TOWN_OF_YOUR_CHOICE-latest.osrm.edges
 ...
 ```
 
-There is an important detail here: **`berlin-latest.osrm` is effectively the base name for a collection of files, not necessarily a single file containing the complete routing database.** OSRM refers to this collection as an `.osrm.*` dataset.
+There is an important detail here: **`CITY_OR_TOWN_OF_YOUR_CHOICE-latest.osrm` is effectively the base name for a collection of files, not necessarily a single file containing the complete routing database.** OSRM refers to this collection as an `.osrm.*` dataset.
 
 ### 3. Prepare the routing graph
 
